@@ -64,7 +64,8 @@ int main(int argc, char **argv)
 			ioctl(0, TIOCGWINSZ, &ws);
 			rain = realloc(rain, ws.ws_col);
 			resize = 0;
-			//printf("\033[2J"); // clear screen
+			printf("\033[2J");             // clear screen
+			printf("\033[%dA", ws.ws_row); // move up ws.ws_row lines
 		}
 
 		for (int i = 0; i < (ws.ws_col - 1); ++i)
