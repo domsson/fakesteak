@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-gcc -Wall -O3 -o bin/charrain src/charrain.c
+gcc -Wall -O3 -o bin/charrain src/charrain.c -lm
