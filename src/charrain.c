@@ -42,8 +42,8 @@ static volatile int handled;   // last signal that has been handled
 //  128 64  32  16   8   4   2   1  128 64  32  16   8   4   2   1
 //   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
 //   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-//   '---------- STATE ----------'   '---------- ASCII ----------'
-//   '------ SIZE -------'   '---'
+//  '---------------------' '-----' '-----------------------------'
+//           SIZE            STATE               ASCII
 
 struct matrix
 {
@@ -163,25 +163,22 @@ mat_set_value(matrix_s *mat, int row, int col, uint16_t value)
 static uint8_t
 mat_set_ascii(matrix_s *mat, int row, int col, uint8_t ascii)
 {
-	uint8_t state = mat_get_state(mat, row, col);
-	uint8_t size  = mat_get_size(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(ascii, state, size));
+	uint16_t value = mat_get_value(mat, row, col);
+	return mat_set_value(mat, row, col, get_value(ascii, get_state(value), get_size(value)));
 }
 
 static uint8_t
 mat_set_state(matrix_s *mat, int row, int col, uint8_t state)
 {
-	uint8_t ascii = mat_get_ascii(mat, row, col);
-	uint8_t size  = mat_get_size(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(ascii, state, size));
+	uint16_t value = mat_get_value(mat, row, col);
+	return mat_set_value(mat, row, col, get_value(get_ascii(value), state, get_size(value)));
 }
 
 static uint8_t
 mat_set_size(matrix_s *mat, int row, int col, uint8_t size)
 {
-	uint8_t ascii = mat_get_ascii(mat, row, col);
-	uint8_t state = mat_get_state(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(ascii, state, size));
+	uint16_t value = mat_get_value(mat, row, col);
+	return mat_set_value(mat, row, col, get_value(get_ascii(value), get_state(value), size));
 }
 
 static void
