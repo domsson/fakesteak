@@ -515,7 +515,7 @@ main(int argc, char **argv)
 		//printf("\033[%dA", ws.ws_row); // cursor up 
 		//printf("\033[2J"); // clear screen
 		//printf("\033[H");  // cursor back to top, left
-		  printf("\033[%dT", ws.ws_row); // scroll down
+		//printf("\033[%dT", ws.ws_row); // scroll down
 		//printf("\033[%dN", ws.ws_row); // scroll up
 
 		++tick;
