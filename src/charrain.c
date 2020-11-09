@@ -68,6 +68,8 @@ enum colors {
 	COLOR_FG_GREEN5 = 22
 };
 
+//char *colors[] = { ANSI_FONT_FG_GREEN1, ANSI_FONT_FG_GREEN2, ANSI_FONT_FG_GREEN3, ANSI_FONT_FG_GREEN4, ANSI_FONT_FG_GREEN5 };
+
 uint8_t greens[] = { 48, 41, 35, 29, 22 };
 
 struct matrix
@@ -478,7 +480,7 @@ main(int argc, char **argv)
 	ioctl(0, TIOCGWINSZ, &ws);
 
 	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 900000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
 
 	setlinebuf(stdout);
 
