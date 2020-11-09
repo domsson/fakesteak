@@ -22,12 +22,9 @@ static volatile int resize;
 static volatile int running;   // controls running of the main loop 
 static volatile int handled;   // last signal that has been handled 
 
-#define BITMASK_STATE 0xFF00
-#define BITMASK_ASCII 0x00FF 
-
-//#define BITMASK_CHAR 0x00FF
-//#define BITMASK_DROP 0x0300
-//#define BITMASK_TAIL 0xFC00
+#define BITMASK_ASCII 0x00FF
+#define BITMASK_STATE 0x0300
+#define BITMASK_SIZE  0xFC00
 
 #define STATE_NONE 0
 #define STATE_DROP 1
@@ -36,7 +33,9 @@ static volatile int handled;   // last signal that has been handled
 #define DEBUG_STATE 1
 #define DEBUG_ASCII 2
 
-#define GLITCH_RATIO 0.01
+#define MAX_DROP_LENGTH 252
+
+#define GLITCH_RATIO 0.02
 #define DROP_RATIO   0.01
 #define DROP_LENGTH  20
 
@@ -44,7 +43,7 @@ static volatile int handled;   // last signal that has been handled
 //   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
 //   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 //   '---------- STATE ----------'   '---------- ASCII ----------'
-//   '------ TAIL -------'   '---'
+//   '------ SIZE -------'   '---'
 
 struct matrix
 {
@@ -98,9 +97,9 @@ rand_ascii()
 }
 
 static uint16_t
-get_value(uint8_t ascii, uint8_t state)
+get_value(uint8_t ascii, uint8_t state, uint8_t size)
 {
-	return (BITMASK_STATE & (state << 8)) | ascii;
+	return (BITMASK_SIZE & (size << 10)) | (BITMASK_STATE & (state << 8)) | ascii;
 }
 
 static uint8_t
@@ -113,6 +112,12 @@ static uint8_t
 get_state(uint16_t value)
 {
 	return (value & BITMASK_STATE) >> 8;
+}
+
+static uint8_t
+get_size(uint16_t value)
+{
+	return (value & BITMASK_SIZE) >> 12;
 }
 
 static int
@@ -142,6 +147,12 @@ mat_get_state(matrix_s *mat, int row, int col)
 }
 
 static uint8_t
+mat_get_size(matrix_s *mat, int row, int col)
+{
+	return get_size(mat_get_value(mat, row, col));
+}
+
+static uint8_t
 mat_set_value(matrix_s *mat, int row, int col, uint16_t value)
 {
 	if (row >= mat->rows) return 0;
@@ -153,14 +164,24 @@ static uint8_t
 mat_set_ascii(matrix_s *mat, int row, int col, uint8_t ascii)
 {
 	uint8_t state = mat_get_state(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(ascii, state));
+	uint8_t size  = mat_get_size(mat, row, col);
+	return mat_set_value(mat, row, col, get_value(ascii, state, size));
 }
 
 static uint8_t
 mat_set_state(matrix_s *mat, int row, int col, uint8_t state)
 {
 	uint8_t ascii = mat_get_ascii(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(ascii, state));
+	uint8_t size  = mat_get_size(mat, row, col);
+	return mat_set_value(mat, row, col, get_value(ascii, state, size));
+}
+
+static uint8_t
+mat_set_size(matrix_s *mat, int row, int col, uint8_t size)
+{
+	uint8_t ascii = mat_get_ascii(mat, row, col);
+	uint8_t state = mat_get_state(mat, row, col);
+	return mat_set_value(mat, row, col, get_value(ascii, state, size));
 }
 
 static void
