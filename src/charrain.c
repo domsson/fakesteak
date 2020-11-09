@@ -3,37 +3,45 @@
 #include <stdint.h>     // uintmax_t
 #include <time.h>       // nanosleep(), struct timespec
 #include <signal.h>     // sigaction(), struct sigaction
-#include <math.h>       // sin()
 #include <termios.h>    // struct winsize 
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_FONT_RESET "\x1b[0m"
 
-#define ANSI_HIDE_CURSOR   "\e[?25l"
-#define ANSI_SHOW_CURSOR   "\e[?25h"
+#define ANSI_FONT_BOLD  "\x1b[1m"
+#define ANSI_FONT_FAINT "\x1b[2m"
 
-static volatile int resize;
-static volatile int running;   // controls running of the main loop 
-static volatile int handled;   // last signal that has been handled 
+//#define ANSI_FONT_FG_WHITE        "\x1b[37m"
+//#define ANSI_FONT_FG_GREEN        "\x1b[32m"
+//#define ANSI_FONT_FG_BRIGHT_GREEN "\x1b[92m"
+//#define ANSI_FONT_BG_BLACK        "\x1b[40m"
+
+#define ANSI_FONT_FG_WHITE1 "\x1b[38;5;194m"
+#define ANSI_FONT_FG_WHITE2 "\x1b[38;5;157m"
+#define ANSI_FONT_FG_WHITE3 "\x1b[38;5;120m"
+#define ANSI_FONT_FG_GREEN1 "\x1b[38;5;46m"
+#define ANSI_FONT_FG_GREEN2 "\x1b[38;5;40m"
+#define ANSI_FONT_FG_GREEN3 "\x1b[38;5;34m"
+#define ANSI_FONT_FG_GREEN4 "\x1b[38;5;28m"
+#define ANSI_FONT_FG_GREEN5 "\x1b[38;5;22m"
+
+#define ANSI_HIDE_CURSOR  "\e[?25l"
+#define ANSI_SHOW_CURSOR  "\e[?25h"
 
 #define BITMASK_ASCII 0x00FF
 #define BITMASK_STATE 0x0300
-#define BITMASK_SIZE  0xFC00
+#define BITMASK_TSIZE 0xFC00
 
 #define STATE_NONE 0
 #define STATE_DROP 1
 #define STATE_TAIL 2
 
-#define DEBUG_STATE 1
-#define DEBUG_ASCII 2
+#define DEBUG_ASCII 1
+#define DEBUG_STATE 2
+#define DEBUG_TSIZE 3
 
-#define MAX_DROP_LENGTH 252
+#define TSIZE_MIN 8
+#define TSIZE_MAX 252
 
 #define GLITCH_RATIO 0.02
 #define DROP_RATIO   0.01
@@ -44,6 +52,21 @@ static volatile int handled;   // last signal that has been handled
 //   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 //  '---------------------' '-----' '-----------------------------'
 //           SIZE            STATE               ASCII
+
+static volatile int resize;
+static volatile int running;   // controls running of the main loop 
+static volatile int handled;   // last signal that has been handled 
+
+enum colors {
+	COLOR_FG_WHITE1 = 194,
+	COLOR_FG_WHITE2 = 157,
+	COLOR_FG_WHITE3 = 120,
+	COLOR_FG_GREEN1 = 46,
+	COLOR_FG_GREEN2 = 40,
+	COLOR_FG_GREEN3 = 34,
+	COLOR_FG_GREEN4 = 28,
+	COLOR_FG_GREEN5 = 22
+};
 
 struct matrix
 {
@@ -96,10 +119,22 @@ rand_ascii()
 	return rand_int_mincap(32, 126);
 }
 
-static uint16_t
-get_value(uint8_t ascii, uint8_t state, uint8_t size)
+static void
+color_fg_8bit(uint8_t color)
 {
-	return (BITMASK_SIZE & (size << 10)) | (BITMASK_STATE & (state << 8)) | ascii;
+	fprintf(stdout, "\x1b[38;5;%hhu;194m", color);
+}
+
+static void
+color_bg_8bit(uint8_t color)
+{
+	fprintf(stdout, "\x1b[48;5;%hhu;194m", color);
+}
+
+static uint16_t
+get_value(uint8_t ascii, uint8_t state, uint8_t tsize)
+{
+	return (BITMASK_TSIZE & (tsize << 10)) | (BITMASK_STATE & (state << 8)) | ascii;
 }
 
 static uint8_t
@@ -115,9 +150,9 @@ get_state(uint16_t value)
 }
 
 static uint8_t
-get_size(uint16_t value)
+get_tsize(uint16_t value)
 {
-	return (value & BITMASK_SIZE) >> 12;
+	return (value & BITMASK_TSIZE) >> 10;
 }
 
 static int
@@ -147,9 +182,9 @@ mat_get_state(matrix_s *mat, int row, int col)
 }
 
 static uint8_t
-mat_get_size(matrix_s *mat, int row, int col)
+mat_get_tsize(matrix_s *mat, int row, int col)
 {
-	return get_size(mat_get_value(mat, row, col));
+	return get_tsize(mat_get_value(mat, row, col));
 }
 
 static uint8_t
@@ -164,38 +199,29 @@ static uint8_t
 mat_set_ascii(matrix_s *mat, int row, int col, uint8_t ascii)
 {
 	uint16_t value = mat_get_value(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(ascii, get_state(value), get_size(value)));
+	return mat_set_value(mat, row, col, 
+			get_value(ascii, get_state(value), get_tsize(value)));
 }
 
 static uint8_t
 mat_set_state(matrix_s *mat, int row, int col, uint8_t state)
 {
 	uint16_t value = mat_get_value(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(get_ascii(value), state, get_size(value)));
+	uint8_t  tsize = state == STATE_NONE ? 0 : get_tsize(value);
+	return mat_set_value(mat, row, col, 
+			get_value(get_ascii(value), state, tsize));
 }
 
 static uint8_t
-mat_set_size(matrix_s *mat, int row, int col, uint8_t size)
+mat_set_tsize(matrix_s *mat, int row, int col, uint8_t tsize)
 {
 	uint16_t value = mat_get_value(mat, row, col);
-	return mat_set_value(mat, row, col, get_value(get_ascii(value), get_state(value), size));
+	return mat_set_value(mat, row, col, 
+			get_value(get_ascii(value), get_state(value), tsize));
 }
 
 static void
-mat_fill(matrix_s *mat, uint8_t state)
-{
-	for (int r = 0; r < mat->rows; ++r)
-	{
-		for (int c = 0; c < mat->cols; ++c)
-		{
-			mat_set_state(mat, r, c, state);
-			mat_set_ascii(mat, r, c, rand_ascii());
-		}
-	}
-}
-
-static void
-mat_glitch(matrix_s *mat, double fraction)
+mat_glitch(matrix_s *mat, float fraction)
 {
 	int size = mat->rows * mat->cols;
 	int num = fraction * size;
@@ -216,6 +242,10 @@ mat_show(matrix_s *mat)
 {
 	uint16_t value = 0;
 	uint8_t  state = STATE_NONE;
+	uint8_t  tsize = 0;
+	
+	int tsize_avg = (TSIZE_MIN + TSIZE_MAX) / 2;
+	int faint = 0;
 
 	for (int r = 0; r < mat->rows; ++r)
 	{
@@ -223,6 +253,9 @@ mat_show(matrix_s *mat)
 		{
 			value = mat_get_value(mat, r, c);
 			state = get_state(value);
+			tsize = get_tsize(value);
+
+			faint = (0.1 * tsize) > rand_float();
 
 			switch (state)
 			{
@@ -230,17 +263,29 @@ mat_show(matrix_s *mat)
 					fprintf(stdout, " ");
 					break;
 				case STATE_DROP:
-					fprintf(stdout, ANSI_COLOR_RESET);
+					//fprintf(stdout, ANSI_COLOR_FG_WHITE);
+					color_fg_8bit(COLOR_FG_WHITE1);
 					fprintf(stdout, "%c", get_ascii(value));
-					fprintf(stdout, ANSI_COLOR_GREEN);
+					color_fg_8bit(COLOR_FG_GREEN1);
+					//fprintf(stdout, ANSI_COLOR_FG_GREEN);
 					break;
 				case STATE_TAIL:
-					fprintf(stdout, "%c", get_ascii(value));
+					if (faint)
+					{
+						//fprintf(stdout, ANSI_WEIGHT_FAINT);
+						//fprintf(stdout, ANSI_COLOR_FG_GREEN);
+						color_fg_8bit(COLOR_FG_GREEN5);
+						fprintf(stdout, "%c", get_ascii(value));
+						color_fg_8bit(COLOR_FG_GREEN1);
+						//fprintf(stdout, ANSI_WEIGHT_BOLD);
+					}
+					else
+					{
+						fprintf(stdout, "%c", get_ascii(value));
+					}
 					break;
 						
 			}
-			//fprintf(stdout, "%c", get_state(value) ? get_ascii(value) : ' ');
-			//fprintf(stdout, "%c", mat_get_state(mat, r, c) ? mat_get_ascii(mat, r, c) : ' ');
 		}
 		fprintf(stdout, "\n");
 	}
@@ -259,9 +304,13 @@ mat_debug(matrix_s *mat, int what)
 			{
 				fprintf(stdout, "%hhu", get_state(value));
 			}
-			else
+			else if (what == DEBUG_ASCII)
 			{
 				fprintf(stdout, "%c", get_ascii(value));
+			}
+			else if (what == DEBUG_TSIZE)
+			{
+				fprintf(stdout, "%hhu", get_tsize(value));
 			}
 		}
 		fprintf(stdout, "\n");
@@ -282,6 +331,7 @@ new_drop(matrix_s *mat, int max_tries)
 		if (mat_get_state(mat, 0, c) == STATE_NONE && mat_get_state(mat, 1, c) == STATE_NONE)
 		{
 			mat_set_state(mat, 0, c, STATE_DROP);
+			mat_set_tsize(mat, 0, c, rand_int(TSIZE_MIN, TSIZE_MAX));
 			break;
 		}
 	}
@@ -298,16 +348,25 @@ mat_drop(matrix_s *mat, float ratio)
 		int r = rand_int(0, mat->rows - 1);
 		int c = rand_int(0, mat->cols - 1);
 		mat_set_state(mat, r, c, STATE_DROP);
+		mat_set_tsize(mat, r, c, rand_int(TSIZE_MIN, TSIZE_MAX));
 	}
 }
 
 static void
-col_trace(matrix_s *mat, int col, int row, int length)
+col_trace(matrix_s *mat, int col, int row, int tsize)
 {
-	int top = row - length > 0 ? row - length : 0;
-	for (; row >= top; --row)
+	int top = row - tsize > 0 ? row - tsize : 0;
+	for (int i = 0; row >= top; --row, ++i)
 	{
-		mat_set_state(mat, row, col, row == top ? STATE_NONE : STATE_TAIL);
+		if (row == top)
+		{
+			mat_set_state(mat, row, col, STATE_NONE);
+		}
+		else
+		{	
+			mat_set_state(mat, row, col, STATE_TAIL);
+			mat_set_tsize(mat, row, col, tsize - i); 
+		}
 	}
 }
 
@@ -329,29 +388,54 @@ col_clean(matrix_s *mat, int col)
 static void
 mat_tick(matrix_s *mat)
 {
+	uint8_t state = STATE_NONE;
+	uint8_t tsize = 0;
+
 	// find the drops
-	int state = STATE_NONE;
 	for (int c = 0; c < mat->cols; ++c)
 	{
 		for (int r = mat->rows - 1; r >= 0; --r)
 		{
 			state = mat_get_state(mat, r, c);
-			if (r == mat->rows - 1 && state == STATE_TAIL)
+			tsize = mat_get_tsize(mat, r, c);
+
+			if (state == STATE_DROP)
 			{
-				col_clean(mat, c);
+				if (r == mat->rows - 1) // bottom row)
+				{
+					mat_set_state(mat, r, c, STATE_TAIL);
+					new_drop(mat, mat->cols);
+					col_clean(mat, c);
+				}
+				else
+				{
+					mat_set_state(mat, r,   c, STATE_NONE);
+					mat_set_state(mat, r+1, c, STATE_DROP);
+					mat_set_tsize(mat, r+1, c, tsize);
+					col_trace(mat, c, r, tsize);
+				}
 			}
-			else if (r == mat->rows - 1 && state == STATE_DROP)
+			else if (state == STATE_TAIL)
 			{
-				mat_set_state(mat, r, c, STATE_TAIL);
-				//mat_set_state(mat, 0, c, STATE_DROP);
-				new_drop(mat, mat->cols);
+				if (r == mat->rows - 1) // bottom row
+				{
+					col_clean(mat, c);
+				}
+
 			}
-			else if (state == STATE_DROP)
-			{
-				mat_set_state(mat, r,   c, STATE_NONE);
-				mat_set_state(mat, r+1, c, STATE_DROP);
-				col_trace(mat, c, r, DROP_LENGTH);
-			}
+		}
+	}
+}
+
+static void
+mat_fill(matrix_s *mat, uint8_t state)
+{
+	for (int r = 0; r < mat->rows; ++r)
+	{
+		for (int c = 0; c < mat->cols; ++c)
+		{
+			mat_set_state(mat, r, c, state);
+			mat_set_ascii(mat, r, c, rand_ascii());
 		}
 	}
 }
@@ -404,10 +488,12 @@ main(int argc, char **argv)
 	mat_drop(&mat, DROP_RATIO);
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
-	fprintf(stdout, ANSI_COLOR_GREEN);
+	//fprintf(stdout, ANSI_COLOR_FG_GREEN);
+	color_fg_8bit(COLOR_FG_GREEN1);
+	//fprintf(stdout, ANSI_WEIGHT_BOLD);
+	//fprintf(stdout, ANSI_COLOR_BG_BLACK);
 
 	uintmax_t tick = 0;
-	int state = 0;
 
 	running = 1;
 	while(running)
@@ -424,16 +510,20 @@ main(int argc, char **argv)
 		mat_glitch(&mat, GLITCH_RATIO);
 		mat_tick(&mat);
 		mat_show(&mat);
-		//mat_debug(&mat, DEBUG_STATE);
+		//mat_debug(&mat, DEBUG_TSIZE);
 
-		printf("\033[%dA", ws.ws_row); // move up ws.ws_row lines (back to start)
+		//printf("\033[%dA", ws.ws_row); // cursor up 
+		//printf("\033[2J"); // clear screen
+		//printf("\033[H");  // cursor back to top, left
+		  printf("\033[%dT", ws.ws_row); // scroll down
+		//printf("\033[%dN", ws.ws_row); // scroll up
 
 		++tick;
-
 		nanosleep(&ts, NULL);
 	}
 
-	fprintf(stdout, ANSI_COLOR_RESET);
+	free(mat.data);
+	fprintf(stdout, ANSI_FONT_RESET);
 	fprintf(stdout, ANSI_SHOW_CURSOR);
 	return EXIT_SUCCESS;
 }
