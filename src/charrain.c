@@ -22,31 +22,31 @@ static volatile int resize;
 static volatile int running;   // controls running of the main loop 
 static volatile int handled;   // last signal that has been handled 
 
-#define BITMASK_STATE 0x80
-#define BITMASK_ASCII 0x7F 
+#define BITMASK_STATE 0xFF00
+#define BITMASK_ASCII 0x00FF 
 
-#define STATE_ON  1
-#define STATE_OFF 0
+//#define BITMASK_CHAR 0x00FF
+//#define BITMASK_DROP 0x0100
+//#define BITMASK_TAIL 0xE000
 
-typedef unsigned char byte;
+#define STATE_NONE 0
+#define STATE_DROP 1
+#define STATE_TAIL 2
+
+#define DEBUG_STATE 1
+#define DEBUG_ASCII 2
+
+// 128  64  32  16   8   4   2   1
+//   0   0   0   0   0   0   0   0
 
 struct matrix
 {
-	byte *data;
-	int   cols;
-	int   rows;
+	uint16_t *data;
+	int cols;
+	int rows;
 };
 
 typedef struct matrix matrix_s;
-
-struct drop
-{
-	int col;
-	int row;
-	int length;
-};
-
-typedef struct drop drop_s;
 
 static void
 on_signal(int sig)
@@ -84,29 +84,28 @@ rand_int_mincap(int min, int max)
 	return r < min ? min : r;
 }
 
-static byte
+static uint8_t 
 rand_ascii()
 {
 	return rand_int_mincap(32, 126);
 }
 
-static byte
-get_value(byte ascii, byte state)
+static uint16_t
+get_value(uint8_t ascii, uint8_t state)
 {
-	byte value = (ascii & BITMASK_ASCII);
-	return state ? value | BITMASK_STATE : value;
+	return (BITMASK_STATE & (state << 8)) | ascii;
 }
 
-static byte
-get_ascii(byte value)
+static uint8_t
+get_ascii(uint16_t value)
 {
 	return value & BITMASK_ASCII;
 }
 
-static byte
-get_state(byte value)
+static uint8_t
+get_state(uint16_t value)
 {
-	return value & BITMASK_STATE;
+	return (value & BITMASK_STATE) >> 8;
 }
 
 static int
@@ -115,7 +114,7 @@ mat_idx(matrix_s *mat, int row, int col)
 	return row * mat->cols + col;
 }
 
-static byte
+static uint16_t
 mat_get_value(matrix_s *mat, int row, int col)
 {
 	if (row >= mat->rows) return 0;
@@ -123,44 +122,42 @@ mat_get_value(matrix_s *mat, int row, int col)
 	return mat->data[mat_idx(mat, row, col)];
 }
 
-static byte
+static uint8_t
 mat_get_ascii(matrix_s *mat, int row, int col)
 {
 	return get_ascii(mat_get_value(mat, row, col));
 }
 
-static byte
+static uint8_t
 mat_get_state(matrix_s *mat, int row, int col)
 {
 	return get_state(mat_get_value(mat, row, col));
 }
 
-static byte
-mat_set_value(matrix_s *mat, int row, int col, byte val)
+static uint8_t
+mat_set_value(matrix_s *mat, int row, int col, uint16_t value)
 {
 	if (row >= mat->rows) return 0;
 	if (col >= mat->cols) return 0;
-	return mat->data[mat_idx(mat, row, col)] = val;
+	return mat->data[mat_idx(mat, row, col)] = value;
 }
 
-static byte
-mat_set_ascii(matrix_s *mat, int row, int col, byte ascii)
+static uint8_t
+mat_set_ascii(matrix_s *mat, int row, int col, uint8_t ascii)
 {
-	byte value = mat_get_value(mat, row, col);
-	byte state = get_state(value);
+	uint8_t state = mat_get_state(mat, row, col);
 	return mat_set_value(mat, row, col, get_value(ascii, state));
 }
 
-static byte
-mat_set_state(matrix_s *mat, int row, int col, byte state)
+static uint8_t
+mat_set_state(matrix_s *mat, int row, int col, uint8_t state)
 {
-	byte value = mat_get_value(mat, row, col);
-	byte ascii = get_ascii(value);
+	uint8_t ascii = mat_get_ascii(mat, row, col);
 	return mat_set_value(mat, row, col, get_value(ascii, state));
 }
 
 static void
-mat_fill(matrix_s *mat, byte state)
+mat_fill(matrix_s *mat, uint8_t state)
 {
 	for (int r = 0; r < mat->rows; ++r)
 	{
@@ -192,31 +189,125 @@ mat_glitch(matrix_s *mat, double fraction)
 static void
 mat_show(matrix_s *mat)
 {
-	byte value = 0;
+	uint16_t value = 0;
+	uint8_t  state = STATE_NONE;
 
 	for (int r = 0; r < mat->rows; ++r)
 	{
 		for (int c = 0; c < mat->cols; ++c)
 		{
 			value = mat_get_value(mat, r, c);
-			fprintf(stdout, "%c", get_state(value) ? get_ascii(value) : ' ');
+			state = get_state(value);
+
+			switch (state)
+			{
+				case STATE_NONE:
+					fprintf(stdout, " ");
+					break;
+				case STATE_DROP:
+					fprintf(stdout, ANSI_COLOR_RESET);
+					fprintf(stdout, "%c", get_ascii(value));
+					fprintf(stdout, ANSI_COLOR_GREEN);
+					break;
+				case STATE_TAIL:
+					fprintf(stdout, "%c", get_ascii(value));
+					break;
+						
+			}
+			//fprintf(stdout, "%c", get_state(value) ? get_ascii(value) : ' ');
+			//fprintf(stdout, "%c", mat_get_state(mat, r, c) ? mat_get_ascii(mat, r, c) : ' ');
 		}
 		fprintf(stdout, "\n");
 	}
 }
 
 static void
-mat_tick(matrix_s *mat, drop_s *drops, size_t num_drops)
+mat_debug(matrix_s *mat, int what)
 {
-	int distance = 0;
-	for (size_t d = 0; d < num_drops; ++d)
+	uint16_t value = 0;
+	for (int r = 0; r < mat->rows; ++r)
 	{
-		for (int r = 0; r < mat->rows; ++r)
+		for (int c = 0; c < mat->cols; ++c)
 		{
-			distance = abs(drops[d].row - r);
-			mat_set_state(mat, r, drops[d].col, distance < drops[d].length);
+			value = mat_get_value(mat, r, c);
+			if (what == DEBUG_STATE)
+			{
+				fprintf(stdout, "%hhu", get_state(value));
+			}
+			else
+			{
+				fprintf(stdout, "%c", get_ascii(value));
+			}
 		}
-		drops[d].row = (drops[d].row + 1 >= mat->rows) ? 0 : drops[d].row + 1;
+		fprintf(stdout, "\n");
+	}
+}
+
+static void
+mat_drop(matrix_s *mat, float ratio)
+{
+	int total = mat->cols * mat->rows;
+	int drops = (int) ((float) total * ratio);
+
+	for (int d = 0; d < drops; ++d)
+	{
+		int r = rand_int(0, mat->rows - 1);
+		int c = rand_int(0, mat->cols - 1);
+		mat_set_state(mat, r, c, STATE_DROP);
+	}
+}
+
+static void
+col_trace(matrix_s *mat, int col, int row, int length)
+{
+	int top = row - length > 0 ? row - length : 0;
+	for (; row >= top; --row)
+	{
+		mat_set_state(mat, row, col, row == top ? STATE_NONE : STATE_TAIL);
+	}
+}
+
+static void
+col_clean(matrix_s *mat, int col)
+{
+	int state = STATE_NONE;
+	for (int row = mat->rows - 1; row >= 0; --row)
+	{
+		state = mat_get_state(mat, row, col);
+		if (state == STATE_NONE)
+		{
+			mat_set_state(mat, row+1, col, STATE_NONE);
+			break;
+		}
+	}
+}
+
+static void
+mat_tick(matrix_s *mat)
+{
+	// find the drops
+	int state = STATE_NONE;
+	for (int c = 0; c < mat->cols; ++c)
+	{
+		for (int r = mat->rows - 1; r >= 0; --r)
+		{
+			state = mat_get_state(mat, r, c);
+			if (r == mat->rows - 1 && state == STATE_TAIL)
+			{
+				col_clean(mat, c);
+			}
+			else if (r == mat->rows - 1 && state == STATE_DROP)
+			{
+				mat_set_state(mat, r, c, STATE_TAIL);
+				mat_set_state(mat, 0, c, STATE_DROP);
+			}
+			else if (state == STATE_DROP)
+			{
+				mat_set_state(mat, r,   c, STATE_NONE);
+				mat_set_state(mat, r+1, c, STATE_DROP);
+				col_trace(mat, c, r, 10);
+			}
+		}
 	}
 }
 
@@ -227,7 +318,7 @@ mat_tick(matrix_s *mat, drop_s *drops, size_t num_drops)
 static int
 mat_init(matrix_s *mat, int rows, int cols)
 {
-	mat->data = realloc(mat->data, sizeof(char) * rows * cols);
+	mat->data = realloc(mat->data, sizeof(uint16_t) * rows * cols);
 	if (mat->data)
 	{
 		mat->rows = rows;
@@ -264,27 +355,14 @@ main(int argc, char **argv)
 
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col);
-	mat_fill(&mat, STATE_OFF);
+	mat_fill(&mat, STATE_NONE);
+	mat_drop(&mat, 0.01);
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
 	fprintf(stdout, ANSI_COLOR_GREEN);
 
 	uintmax_t tick = 0;
 	int state = 0;
-
-	// create rain drops
-	int num_drops = 100;
-	drop_s *drops = malloc(sizeof(drop_s) * num_drops);
-	if (drops == NULL) return EXIT_FAILURE;
-
-	for (int i = 0; i < num_drops; ++i)
-	{
-		int r = rand_int(0, mat.rows - 1);
-		int c = rand_int(0, mat.cols - 1);
-		drops[i].row = r;
-		drops[i].col = c;
-		drops[i].length = rand_int(0, mat.rows - 1);
-	}
 
 	running = 1;
 	while(running)
@@ -293,22 +371,14 @@ main(int argc, char **argv)
 		{
 			ioctl(0, TIOCGWINSZ, &ws);
 			mat_init(&mat, ws.ws_row, ws.ws_col);
-			mat_fill(&mat, STATE_ON);
+			mat_fill(&mat, STATE_NONE);
 			resize = 0;
 		}
 
-		/*
-		for (int row = 0; row < mat.rows; ++row)
-		{
-			for (int col = 0; col < mat.cols; ++col)
-			{
-			}
-		}
-		*/
-
-		mat_glitch(&mat, 0.01);
-		mat_tick(&mat, drops, num_drops);
+		//mat_glitch(&mat, 0.01);
+		mat_tick(&mat);
 		mat_show(&mat);
+		//mat_debug(&mat, DEBUG_STATE);
 
 		printf("\033[%dA", ws.ws_row); // move up ws.ws_row lines (back to start)
 
