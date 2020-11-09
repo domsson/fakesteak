@@ -480,9 +480,10 @@ main(int argc, char **argv)
 	ioctl(0, TIOCGWINSZ, &ws);
 
 	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 40000000 };
 
-	setlinebuf(stdout);
+	//setlinebuf(stdout);
+	setvbuf(stdout, NULL, _IOFBF, 0);
 
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col);
@@ -512,9 +513,10 @@ main(int argc, char **argv)
 		mat_show(&mat);
 		//mat_debug(&mat, DEBUG_TSIZE);
 
+		fflush(stdout);
 		//printf("\033[%dA", ws.ws_row); // cursor up 
 		//printf("\033[2J"); // clear screen
-		//printf("\033[H");  // cursor back to top, left
+		printf("\033[H");  // cursor back to top, left
 		//printf("\033[%dT", ws.ws_row); // scroll down
 		//printf("\033[%dN", ws.ws_row); // scroll up
 
