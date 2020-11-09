@@ -26,8 +26,8 @@ static volatile int handled;   // last signal that has been handled
 #define BITMASK_ASCII 0x00FF 
 
 //#define BITMASK_CHAR 0x00FF
-//#define BITMASK_DROP 0x0100
-//#define BITMASK_TAIL 0xE000
+//#define BITMASK_DROP 0x0300
+//#define BITMASK_TAIL 0xFC00
 
 #define STATE_NONE 0
 #define STATE_DROP 1
@@ -36,8 +36,15 @@ static volatile int handled;   // last signal that has been handled
 #define DEBUG_STATE 1
 #define DEBUG_ASCII 2
 
-// 128  64  32  16   8   4   2   1
-//   0   0   0   0   0   0   0   0
+#define GLITCH_RATIO 0.01
+#define DROP_RATIO   0.01
+#define DROP_LENGTH  20
+
+//  128 64  32  16   8   4   2   1  128 64  32  16   8   4   2   1
+//   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+//   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+//   '---------- STATE ----------'   '---------- ASCII ----------'
+//   '------ TAIL -------'   '---'
 
 struct matrix
 {
@@ -244,6 +251,25 @@ mat_debug(matrix_s *mat, int what)
 }
 
 static void
+new_drop(matrix_s *mat, int max_tries)
+{
+	// TODO this could turn into an endless loop if there isn't any space
+	//      so we need to make sure the tail lengths are short enough in
+	//      relation to the terminal height to _always_ allow for a new
+	//      drop to be placed _somewhere_ at the top at least. Even then 
+	//      this isn't exactly an elegant approach... but oh well.
+	while (max_tries--)
+	{
+		int c = rand_int(0, mat->cols - 1);
+		if (mat_get_state(mat, 0, c) == STATE_NONE && mat_get_state(mat, 1, c) == STATE_NONE)
+		{
+			mat_set_state(mat, 0, c, STATE_DROP);
+			break;
+		}
+	}
+}
+
+static void
 mat_drop(matrix_s *mat, float ratio)
 {
 	int total = mat->cols * mat->rows;
@@ -299,13 +325,14 @@ mat_tick(matrix_s *mat)
 			else if (r == mat->rows - 1 && state == STATE_DROP)
 			{
 				mat_set_state(mat, r, c, STATE_TAIL);
-				mat_set_state(mat, 0, c, STATE_DROP);
+				//mat_set_state(mat, 0, c, STATE_DROP);
+				new_drop(mat, mat->cols);
 			}
 			else if (state == STATE_DROP)
 			{
 				mat_set_state(mat, r,   c, STATE_NONE);
 				mat_set_state(mat, r+1, c, STATE_DROP);
-				col_trace(mat, c, r, 10);
+				col_trace(mat, c, r, DROP_LENGTH);
 			}
 		}
 	}
@@ -349,14 +376,14 @@ main(int argc, char **argv)
 	ioctl(0, TIOCGWINSZ, &ws);
 
 	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 250000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
 
 	setlinebuf(stdout);
 
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col);
 	mat_fill(&mat, STATE_NONE);
-	mat_drop(&mat, 0.01);
+	mat_drop(&mat, DROP_RATIO);
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
 	fprintf(stdout, ANSI_COLOR_GREEN);
@@ -372,10 +399,11 @@ main(int argc, char **argv)
 			ioctl(0, TIOCGWINSZ, &ws);
 			mat_init(&mat, ws.ws_row, ws.ws_col);
 			mat_fill(&mat, STATE_NONE);
+			mat_drop(&mat, DROP_RATIO);
 			resize = 0;
 		}
 
-		//mat_glitch(&mat, 0.01);
+		mat_glitch(&mat, GLITCH_RATIO);
 		mat_tick(&mat);
 		mat_show(&mat);
 		//mat_debug(&mat, DEBUG_STATE);
