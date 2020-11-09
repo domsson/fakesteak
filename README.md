@@ -1,3 +1,5 @@
 # charrain
 
-This is a pretty lame attempt at implementing a "code rain" screen as seen in the movie "The Matrix". Lame, because the idea was to sacrifice portability and configurability in exchange for better performance and visuals compared to the existing `cmatrix`. However, while I _did_ manage to improve the visuals _somewhat_, I also ended up with noticeably _worse_ performance. Not only that, but while this looks great in (u)rxvt, it kind of flickers in pretty much every other terminal I've testet it in. Oh well, I've tried.
+This is my personal attempt at implementing a green character rain screen as seen in the "The Matrix". There is already `cmatrix`, but I wanted to see if I could get something that looks a bit nicer and possibly runs a bit faster. In turn, I sacrifice portability and terminal compatibility.
+
+Currently, this works pretty nicely in (u)rvxt, but flickers in other terminals I've testet it in. It assumes a terminal that supports 256 color mode.

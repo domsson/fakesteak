@@ -44,7 +44,7 @@
 #define TSIZE_MAX 252
 
 #define GLITCH_RATIO 0.02
-#define DROP_RATIO   0.01
+#define DROP_RATIO   0.015
 #define DROP_LENGTH  20
 
 //  128 64  32  16   8   4   2   1  128 64  32  16   8   4   2   1
@@ -480,7 +480,7 @@ main(int argc, char **argv)
 	ioctl(0, TIOCGWINSZ, &ws);
 
 	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
 
 	setlinebuf(stdout);
 
