@@ -1,6 +1,6 @@
 #include <stdio.h>      // fprintf(), stdout, setlinebuf()
 #include <stdlib.h>     // EXIT_SUCCESS, EXIT_FAILURE, rand()
-//#include <unistd.h>     // sleep()
+#include <stdint.h>     // uintmax_t
 #include <time.h>       // nanosleep(), struct timespec
 #include <signal.h>     // sigaction(), struct sigaction
 #include <math.h>       // sin()
@@ -25,6 +25,9 @@ static volatile int handled;   // last signal that has been handled
 #define BITMASK_STATE 0x80
 #define BITMASK_ASCII 0x7F 
 
+#define STATE_ON  1
+#define STATE_OFF 0
+
 typedef unsigned char byte;
 
 struct matrix
@@ -35,6 +38,15 @@ struct matrix
 };
 
 typedef struct matrix matrix_s;
+
+struct drop
+{
+	int col;
+	int row;
+	int length;
+};
+
+typedef struct drop drop_s;
 
 static void
 on_signal(int sig)
@@ -53,22 +65,29 @@ on_signal(int sig)
 	handled = sig;
 }
 
-static void
-get_size()
+static int
+rand_int(int min, int max)
 {
-	struct winsize ws = { 0 };
-	ioctl(0, TIOCGWINSZ, &ws);
+	return min + rand() % ((max + 1) - min);
+}
 
-	fprintf(stdout, "size: %d x %d characters\n", ws.ws_col, ws.ws_row);
+static float
+rand_float()
+{
+	return (float) rand() / (float) RAND_MAX;
+}
+
+static int
+rand_int_mincap(int min, int max)
+{
+	int r = rand() % max;
+	return r < min ? min : r;
 }
 
 static byte
 rand_ascii()
 {
-	int r = rand() % 126;
-	//return r < 32 ? r + 32 : r;
-	return r < 32 ? 32 : r;
-
+	return rand_int_mincap(32, 126);
 }
 
 static byte
@@ -99,6 +118,8 @@ mat_idx(matrix_s *mat, int row, int col)
 static byte
 mat_get_value(matrix_s *mat, int row, int col)
 {
+	if (row >= mat->rows) return 0;
+	if (col >= mat->cols) return 0;
 	return mat->data[mat_idx(mat, row, col)];
 }
 
@@ -117,6 +138,8 @@ mat_get_state(matrix_s *mat, int row, int col)
 static byte
 mat_set_value(matrix_s *mat, int row, int col, byte val)
 {
+	if (row >= mat->rows) return 0;
+	if (col >= mat->cols) return 0;
 	return mat->data[mat_idx(mat, row, col)] = val;
 }
 
@@ -182,6 +205,21 @@ mat_show(matrix_s *mat)
 	}
 }
 
+static void
+mat_tick(matrix_s *mat, drop_s *drops, size_t num_drops)
+{
+	int distance = 0;
+	for (size_t d = 0; d < num_drops; ++d)
+	{
+		for (int r = 0; r < mat->rows; ++r)
+		{
+			distance = abs(drops[d].row - r);
+			mat_set_state(mat, r, drops[d].col, distance < drops[d].length);
+		}
+		drops[d].row = (drops[d].row + 1 >= mat->rows) ? 0 : drops[d].row + 1;
+	}
+}
+
 /*
  * Creates or recreates (resizes) the given matrix.
  * Returns -1 on error (out of memory), 0 on success.
@@ -202,6 +240,9 @@ mat_init(matrix_s *mat, int rows, int cols)
 int
 main(int argc, char **argv)
 {
+	// https://youtu.be/MvEXkd3O2ow?t=26
+	// https://matrix.logic-wire.de/
+
 	// https://man7.org/linux/man-pages/man4/tty_ioctl.4.html
 	// https://en.wikipedia.org/wiki/ANSI_escape_code
 	// https://gist.github.com/XVilka/8346728
@@ -216,20 +257,34 @@ main(int argc, char **argv)
 	struct winsize ws = { 0 };
 	ioctl(0, TIOCGWINSZ, &ws);
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 250000000 };
 
 	setlinebuf(stdout);
 
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col);
-	mat_fill(&mat, 1);
+	mat_fill(&mat, STATE_OFF);
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
 	fprintf(stdout, ANSI_COLOR_GREEN);
 
-	int i = 0;
-	int row = 0;
+	uintmax_t tick = 0;
 	int state = 0;
+
+	// create rain drops
+	int num_drops = 100;
+	drop_s *drops = malloc(sizeof(drop_s) * num_drops);
+	if (drops == NULL) return EXIT_FAILURE;
+
+	for (int i = 0; i < num_drops; ++i)
+	{
+		int r = rand_int(0, mat.rows - 1);
+		int c = rand_int(0, mat.cols - 1);
+		drops[i].row = r;
+		drops[i].col = c;
+		drops[i].length = rand_int(0, mat.rows - 1);
+	}
 
 	running = 1;
 	while(running)
@@ -237,25 +292,27 @@ main(int argc, char **argv)
 		if (resize)
 		{
 			ioctl(0, TIOCGWINSZ, &ws);
-			resize = 0;
 			mat_init(&mat, ws.ws_row, ws.ws_col);
-			mat_fill(&mat, 1);
+			mat_fill(&mat, STATE_ON);
+			resize = 0;
 		}
 
 		/*
-		for (int col = 0; col < (ws.ws_col - 1); ++col)
+		for (int row = 0; row < mat.rows; ++row)
 		{
-			state = sin(col) > 0.5 && cos(i * row) > 0.3;
-			mat_set_state(&mat, row, col, state);
+			for (int col = 0; col < mat.cols; ++col)
+			{
+			}
 		}
 		*/
 
 		mat_glitch(&mat, 0.01);
+		mat_tick(&mat, drops, num_drops);
 		mat_show(&mat);
+
 		printf("\033[%dA", ws.ws_row); // move up ws.ws_row lines (back to start)
 
-		row = (row + 1) % ws.ws_row;
-		++i;
+		++tick;
 
 		nanosleep(&ts, NULL);
 	}
