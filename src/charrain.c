@@ -246,8 +246,6 @@ mat_show(matrix_s *mat)
 	uint8_t  state = STATE_NONE;
 	uint8_t  tsize = 0;
 	
-	//int tsize_avg = (TSIZE_MIN + TSIZE_MAX) / 2;
-
 	for (int r = 0; r < mat->rows; ++r)
 	{
 		for (int c = 0; c < mat->cols; ++c)
@@ -378,6 +376,10 @@ col_clean(matrix_s *mat, int col)
 			mat_set_state(mat, row+1, col, STATE_NONE);
 			break;
 		}
+		else
+		{
+			mat_set_tsize(mat, row+1, col, mat_get_tsize(mat, row, col));
+		}
 	}
 }
 
@@ -476,7 +478,7 @@ main(int argc, char **argv)
 	ioctl(0, TIOCGWINSZ, &ws);
 
 	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 900000000 };
 
 	setlinebuf(stdout);
 
