@@ -58,7 +58,7 @@ static volatile int running;   // controls running of the main loop
 static volatile int handled;   // last signal that has been handled 
 
 enum colors {
-	COLOR_FG_WHITE1 = 194,
+	COLOR_FG_WHITE1 = 195,
 	COLOR_FG_WHITE2 = 157,
 	COLOR_FG_WHITE3 = 120,
 	COLOR_FG_GREEN1 = 46,
@@ -401,6 +401,7 @@ mat_tick(matrix_s *mat)
 				{
 					mat_set_state(mat, r, c, STATE_TAIL);
 					new_drop(mat, mat->cols);
+					col_trace(mat, c, r, tsize);
 					col_clean(mat, c);
 				}
 				else
@@ -485,6 +486,7 @@ main(int argc, char **argv)
 	mat_drop(&mat, DROP_RATIO);
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
+	fprintf(stdout, ANSI_FONT_BOLD);
 	color_fg_8bit(COLOR_FG_GREEN1);
 
 	uintmax_t tick = 0;
