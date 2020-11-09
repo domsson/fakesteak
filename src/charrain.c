@@ -68,6 +68,8 @@ enum colors {
 	COLOR_FG_GREEN5 = 22
 };
 
+uint8_t greens[] = { 48, 41, 35, 29, 22 };
+
 struct matrix
 {
 	uint16_t *data;
@@ -244,8 +246,7 @@ mat_show(matrix_s *mat)
 	uint8_t  state = STATE_NONE;
 	uint8_t  tsize = 0;
 	
-	int tsize_avg = (TSIZE_MIN + TSIZE_MAX) / 2;
-	int faint = 0;
+	//int tsize_avg = (TSIZE_MIN + TSIZE_MAX) / 2;
 
 	for (int r = 0; r < mat->rows; ++r)
 	{
@@ -254,8 +255,7 @@ mat_show(matrix_s *mat)
 			value = mat_get_value(mat, r, c);
 			state = get_state(value);
 			tsize = get_tsize(value);
-
-			faint = (0.1 * tsize) > rand_float();
+			uint8_t color = greens[tsize];
 
 			switch (state)
 			{
@@ -263,26 +263,12 @@ mat_show(matrix_s *mat)
 					fprintf(stdout, " ");
 					break;
 				case STATE_DROP:
-					//fprintf(stdout, ANSI_COLOR_FG_WHITE);
 					color_fg_8bit(COLOR_FG_WHITE1);
 					fprintf(stdout, "%c", get_ascii(value));
-					color_fg_8bit(COLOR_FG_GREEN1);
-					//fprintf(stdout, ANSI_COLOR_FG_GREEN);
 					break;
 				case STATE_TAIL:
-					if (faint)
-					{
-						//fprintf(stdout, ANSI_WEIGHT_FAINT);
-						//fprintf(stdout, ANSI_COLOR_FG_GREEN);
-						color_fg_8bit(COLOR_FG_GREEN5);
-						fprintf(stdout, "%c", get_ascii(value));
-						color_fg_8bit(COLOR_FG_GREEN1);
-						//fprintf(stdout, ANSI_WEIGHT_BOLD);
-					}
-					else
-					{
-						fprintf(stdout, "%c", get_ascii(value));
-					}
+					color_fg_8bit(color);
+					fprintf(stdout, "%c", get_ascii(value));
 					break;
 						
 			}
@@ -325,13 +311,16 @@ new_drop(matrix_s *mat, int max_tries)
 	//      relation to the terminal height to _always_ allow for a new
 	//      drop to be placed _somewhere_ at the top at least. Even then 
 	//      this isn't exactly an elegant approach... but oh well.
+
+	int maxlen = TSIZE_MAX >= mat->rows ? mat->rows - 1 : TSIZE_MAX;
+
 	while (max_tries--)
 	{
 		int c = rand_int(0, mat->cols - 1);
 		if (mat_get_state(mat, 0, c) == STATE_NONE && mat_get_state(mat, 1, c) == STATE_NONE)
 		{
 			mat_set_state(mat, 0, c, STATE_DROP);
-			mat_set_tsize(mat, 0, c, rand_int(TSIZE_MIN, TSIZE_MAX));
+			mat_set_tsize(mat, 0, c, rand_int(TSIZE_MIN, maxlen));
 			break;
 		}
 	}
@@ -343,12 +332,14 @@ mat_drop(matrix_s *mat, float ratio)
 	int total = mat->cols * mat->rows;
 	int drops = (int) ((float) total * ratio);
 
+	int maxlen = TSIZE_MAX >= mat->rows ? mat->rows - 1 : TSIZE_MAX;
+
 	for (int d = 0; d < drops; ++d)
 	{
 		int r = rand_int(0, mat->rows - 1);
 		int c = rand_int(0, mat->cols - 1);
 		mat_set_state(mat, r, c, STATE_DROP);
-		mat_set_tsize(mat, r, c, rand_int(TSIZE_MIN, TSIZE_MAX));
+		mat_set_tsize(mat, r, c, rand_int(TSIZE_MIN, maxlen));
 	}
 }
 
@@ -356,6 +347,8 @@ static void
 col_trace(matrix_s *mat, int col, int row, int tsize)
 {
 	int top = row - tsize > 0 ? row - tsize : 0;
+	float intensity = 1;
+	int color = 0;
 	for (int i = 0; row >= top; --row, ++i)
 	{
 		if (row == top)
@@ -364,8 +357,11 @@ col_trace(matrix_s *mat, int col, int row, int tsize)
 		}
 		else
 		{	
+			intensity = ((float)i / (float)tsize);
+			color = 4 * intensity;
 			mat_set_state(mat, row, col, STATE_TAIL);
-			mat_set_tsize(mat, row, col, tsize - i); 
+			//mat_set_tsize(mat, row, col, tsize - i);
+			mat_set_tsize(mat, row, col, color);
 		}
 	}
 }
@@ -467,6 +463,7 @@ main(int argc, char **argv)
 	// https://en.wikipedia.org/wiki/ANSI_escape_code
 	// https://gist.github.com/XVilka/8346728
 	// https://stackoverflow.com/a/33206814/3316645 
+	// https://jdebp.eu/FGA/clearing-the-tui-screen.html#POSIX
 	
 	struct sigaction sa = { .sa_handler = &on_signal };
 	sigaction(SIGKILL,  &sa, NULL);
@@ -488,10 +485,7 @@ main(int argc, char **argv)
 	mat_drop(&mat, DROP_RATIO);
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
-	//fprintf(stdout, ANSI_COLOR_FG_GREEN);
 	color_fg_8bit(COLOR_FG_GREEN1);
-	//fprintf(stdout, ANSI_WEIGHT_BOLD);
-	//fprintf(stdout, ANSI_COLOR_BG_BLACK);
 
 	uintmax_t tick = 0;
 
