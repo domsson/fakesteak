@@ -7,14 +7,8 @@
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
 
 #define ANSI_FONT_RESET "\x1b[0m"
-
 #define ANSI_FONT_BOLD  "\x1b[1m"
 #define ANSI_FONT_FAINT "\x1b[2m"
-
-//#define ANSI_FONT_FG_WHITE        "\x1b[37m"
-//#define ANSI_FONT_FG_GREEN        "\x1b[32m"
-//#define ANSI_FONT_FG_BRIGHT_GREEN "\x1b[92m"
-//#define ANSI_FONT_BG_BLACK        "\x1b[40m"
 
 #define ANSI_FONT_FG_WHITE1 "\x1b[38;5;194m"
 #define ANSI_FONT_FG_WHITE2 "\x1b[38;5;157m"
@@ -45,15 +39,8 @@
 
 #define GLITCH_RATIO 0.02
 #define DROP_RATIO   0.015
-#define DROP_LENGTH  20
 
-//  128 64  32  16   8   4   2   1  128 64  32  16   8   4   2   1
-//   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-//   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-//  '---------------------' '-----' '-----------------------------'
-//           SIZE            STATE               ASCII
-
-static volatile int resize;
+static volatile int resized;
 static volatile int running;   // controls running of the main loop 
 static volatile int handled;   // last signal that has been handled 
 
@@ -72,14 +59,29 @@ enum colors {
 
 uint8_t greens[] = { 48, 41, 35, 29, 22 };
 
-struct matrix
+//
+//  The matrix' data represents a 2D array of size cols * rows.
+//  Every data element is a 16 bit int which stores information
+//  about that matrix cell as follows:
+//
+//  128 64  32  16   8   4   2   1  128 64  32  16   8   4   2   1
+//   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+//   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+//  '---------------------' '-----' '-----------------------------'
+//          TSIZE            STATE               ASCII
+//
+//  ASCII: the char code to display (values 32 through 126)
+//  STATE: 0 for NONE, 1 for DROP or 2 for TAIL
+//  TSIZE: length of tail (for DROP) or color intensity (for TAIL)
+//
+
+typedef struct matrix
 {
 	uint16_t *data;
 	int cols;
 	int rows;
-};
-
-typedef struct matrix matrix_s;
+}
+matrix_s;
 
 static void
 on_signal(int sig)
@@ -87,7 +89,7 @@ on_signal(int sig)
 	switch (sig)
 	{
 		case SIGWINCH:
-			resize = 1;
+			resized = 1;
 			break;
 		case SIGKILL:
 		case SIGQUIT:
@@ -124,37 +126,37 @@ rand_ascii()
 }
 
 static void
-color_fg_8bit(uint8_t color)
+color_fg(uint8_t color)
 {
-	fprintf(stdout, "\x1b[38;5;%hhu;194m", color);
+	fprintf(stdout, "\x1b[38;5;%hhum", color);
 }
 
 static void
-color_bg_8bit(uint8_t color)
+color_bg(uint8_t color)
 {
-	fprintf(stdout, "\x1b[48;5;%hhu;194m", color);
+	fprintf(stdout, "\x1b[48;5;%hhum", color);
 }
 
 static uint16_t
-get_value(uint8_t ascii, uint8_t state, uint8_t tsize)
+val_new(uint8_t ascii, uint8_t state, uint8_t tsize)
 {
 	return (BITMASK_TSIZE & (tsize << 10)) | (BITMASK_STATE & (state << 8)) | ascii;
 }
 
 static uint8_t
-get_ascii(uint16_t value)
+val_get_ascii(uint16_t value)
 {
 	return value & BITMASK_ASCII;
 }
 
 static uint8_t
-get_state(uint16_t value)
+val_get_state(uint16_t value)
 {
 	return (value & BITMASK_STATE) >> 8;
 }
 
 static uint8_t
-get_tsize(uint16_t value)
+val_get_tsize(uint16_t value)
 {
 	return (value & BITMASK_TSIZE) >> 10;
 }
@@ -176,19 +178,19 @@ mat_get_value(matrix_s *mat, int row, int col)
 static uint8_t
 mat_get_ascii(matrix_s *mat, int row, int col)
 {
-	return get_ascii(mat_get_value(mat, row, col));
+	return val_get_ascii(mat_get_value(mat, row, col));
 }
 
 static uint8_t
 mat_get_state(matrix_s *mat, int row, int col)
 {
-	return get_state(mat_get_value(mat, row, col));
+	return val_get_state(mat_get_value(mat, row, col));
 }
 
 static uint8_t
 mat_get_tsize(matrix_s *mat, int row, int col)
 {
-	return get_tsize(mat_get_value(mat, row, col));
+	return val_get_tsize(mat_get_value(mat, row, col));
 }
 
 static uint8_t
@@ -204,16 +206,16 @@ mat_set_ascii(matrix_s *mat, int row, int col, uint8_t ascii)
 {
 	uint16_t value = mat_get_value(mat, row, col);
 	return mat_set_value(mat, row, col, 
-			get_value(ascii, get_state(value), get_tsize(value)));
+			val_new(ascii, val_get_state(value), val_get_tsize(value)));
 }
 
 static uint8_t
 mat_set_state(matrix_s *mat, int row, int col, uint8_t state)
 {
 	uint16_t value = mat_get_value(mat, row, col);
-	uint8_t  tsize = state == STATE_NONE ? 0 : get_tsize(value);
+	uint8_t  tsize = state == STATE_NONE ? 0 : val_get_tsize(value);
 	return mat_set_value(mat, row, col, 
-			get_value(get_ascii(value), state, tsize));
+			val_new(val_get_ascii(value), state, tsize));
 }
 
 static uint8_t
@@ -221,7 +223,7 @@ mat_set_tsize(matrix_s *mat, int row, int col, uint8_t tsize)
 {
 	uint16_t value = mat_get_value(mat, row, col);
 	return mat_set_value(mat, row, col, 
-			get_value(get_ascii(value), get_state(value), tsize));
+			val_new(val_get_ascii(value), val_get_state(value), tsize));
 }
 
 static void
@@ -253,8 +255,8 @@ mat_show(matrix_s *mat)
 		for (int c = 0; c < mat->cols; ++c)
 		{
 			value = mat_get_value(mat, r, c);
-			state = get_state(value);
-			tsize = get_tsize(value);
+			state = val_get_state(value);
+			tsize = val_get_tsize(value);
 			uint8_t color = greens[tsize];
 
 			switch (state)
@@ -263,18 +265,20 @@ mat_show(matrix_s *mat)
 					fprintf(stdout, " ");
 					break;
 				case STATE_DROP:
-					color_fg_8bit(COLOR_FG_WHITE1);
-					fprintf(stdout, "%c", get_ascii(value));
+					color_fg(COLOR_FG_WHITE1);
+					fprintf(stdout, "%c", val_get_ascii(value));
 					break;
 				case STATE_TAIL:
-					color_fg_8bit(color);
-					fprintf(stdout, "%c", get_ascii(value));
+					color_fg(color);
+					fprintf(stdout, "%c", val_get_ascii(value));
 					break;
 						
 			}
 		}
 		fprintf(stdout, "\n");
 	}
+	// Depending on what type of buffering we use, flushing might be needed
+	fflush(stdout);
 }
 
 static void
@@ -288,15 +292,15 @@ mat_debug(matrix_s *mat, int what)
 			value = mat_get_value(mat, r, c);
 			if (what == DEBUG_STATE)
 			{
-				fprintf(stdout, "%hhu", get_state(value));
+				fprintf(stdout, "%hhu", val_get_state(value));
 			}
 			else if (what == DEBUG_ASCII)
 			{
-				fprintf(stdout, "%c", get_ascii(value));
+				fprintf(stdout, "%c", val_get_ascii(value));
 			}
 			else if (what == DEBUG_TSIZE)
 			{
-				fprintf(stdout, "%hhu", get_tsize(value));
+				fprintf(stdout, "%hhu", val_get_tsize(value));
 			}
 		}
 		fprintf(stdout, "\n");
@@ -458,6 +462,16 @@ mat_init(matrix_s *mat, int rows, int cols)
 	return -1;
 }
 
+void
+cli_clear(int rows)
+{
+	printf("\033[%dA", rows); // cursor up 
+	//printf("\033[2J"); // clear screen
+	//printf("\033[H");  // cursor back to top, left
+	//printf("\033[%dT", rows); // scroll down
+	//printf("\033[%dN", rows); // scroll up
+}
+
 int
 main(int argc, char **argv)
 {
@@ -480,7 +494,7 @@ main(int argc, char **argv)
 	ioctl(0, TIOCGWINSZ, &ws);
 
 	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 40000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
 
 	//setlinebuf(stdout);
 	setvbuf(stdout, NULL, _IOFBF, 0);
@@ -492,20 +506,20 @@ main(int argc, char **argv)
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
 	fprintf(stdout, ANSI_FONT_BOLD);
-	color_fg_8bit(COLOR_FG_GREEN1);
+	color_fg(COLOR_FG_GREEN1);
 
 	uintmax_t tick = 0;
 
 	running = 1;
 	while(running)
 	{
-		if (resize)
+		if (resized)
 		{
 			ioctl(0, TIOCGWINSZ, &ws);
 			mat_init(&mat, ws.ws_row, ws.ws_col);
 			mat_fill(&mat, STATE_NONE);
 			mat_drop(&mat, DROP_RATIO);
-			resize = 0;
+			resized = 0;
 		}
 
 		mat_glitch(&mat, GLITCH_RATIO);
@@ -513,12 +527,7 @@ main(int argc, char **argv)
 		mat_show(&mat);
 		//mat_debug(&mat, DEBUG_TSIZE);
 
-		fflush(stdout);
-		//printf("\033[%dA", ws.ws_row); // cursor up 
-		//printf("\033[2J"); // clear screen
-		printf("\033[H");  // cursor back to top, left
-		//printf("\033[%dT", ws.ws_row); // scroll down
-		//printf("\033[%dN", ws.ws_row); // scroll up
+		//cli_clear(ws.ws_row);
 
 		++tick;
 		nanosleep(&ts, NULL);
