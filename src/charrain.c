@@ -537,7 +537,7 @@ main(int argc, char **argv)
 			ioctl(0, TIOCGWINSZ, &ws);
 			mat_init(&mat, ws.ws_row, ws.ws_col);
 			mat_fill(&mat, STATE_NONE);
-			mat_drop(&mat, DROP_RATIO);
+			mat_rain(&mat, DROP_RATIO);
 			resized = 0;
 		}
 
