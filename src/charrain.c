@@ -1,6 +1,6 @@
 #include <stdio.h>      // fprintf(), stdout, setlinebuf()
 #include <stdlib.h>     // EXIT_SUCCESS, EXIT_FAILURE, rand()
-#include <stdint.h>     // uintmax_t
+#include <stdint.h>     // uint8_t, uint16_t
 #include <time.h>       // time(), time_t, nanosleep(), struct timespec
 #include <signal.h>     // sigaction(), struct sigaction
 #include <termios.h>    // struct winsize 
@@ -527,8 +527,6 @@ main(int argc, char **argv)
 	fprintf(stdout, ANSI_FONT_BOLD);
 	color_fg(COLOR_FG_GREEN1);
 
-	uintmax_t tick = 0;
-
 	running = 1;
 	while(running)
 	{
@@ -548,7 +546,6 @@ main(int argc, char **argv)
 
 		//cli_clear(ws.ws_row);
 
-		++tick;
 		nanosleep(&ts, NULL);
 	}
 
