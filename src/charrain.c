@@ -1,7 +1,7 @@
 #include <stdio.h>      // fprintf(), stdout, setlinebuf()
 #include <stdlib.h>     // EXIT_SUCCESS, EXIT_FAILURE, rand()
 #include <stdint.h>     // uint8_t, uint16_t
-#include <time.h>       // time(), time_t, nanosleep(), struct timespec
+#include <time.h>       // time(), nanosleep(), struct timespec
 #include <signal.h>     // sigaction(), struct sigaction
 #include <termios.h>    // struct winsize 
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
@@ -9,15 +9,6 @@
 #define ANSI_FONT_RESET "\x1b[0m"
 #define ANSI_FONT_BOLD  "\x1b[1m"
 #define ANSI_FONT_FAINT "\x1b[2m"
-
-#define ANSI_FONT_FG_WHITE1 "\x1b[38;5;194m"
-#define ANSI_FONT_FG_WHITE2 "\x1b[38;5;157m"
-#define ANSI_FONT_FG_WHITE3 "\x1b[38;5;120m"
-#define ANSI_FONT_FG_GREEN1 "\x1b[38;5;46m"
-#define ANSI_FONT_FG_GREEN2 "\x1b[38;5;40m"
-#define ANSI_FONT_FG_GREEN3 "\x1b[38;5;34m"
-#define ANSI_FONT_FG_GREEN4 "\x1b[38;5;28m"
-#define ANSI_FONT_FG_GREEN5 "\x1b[38;5;22m"
 
 #define ANSI_HIDE_CURSOR  "\e[?25l"
 #define ANSI_SHOW_CURSOR  "\e[?25h"
@@ -40,24 +31,21 @@
 #define GLITCH_RATIO 0.02
 #define DROP_RATIO   0.015
 
-static volatile int resized;
+static volatile int resized;   // window resize event received
 static volatile int running;   // controls running of the main loop 
 static volatile int handled;   // last signal that has been handled 
 
+// https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
 enum colors {
-	COLOR_FG_WHITE1 = 195,
-	COLOR_FG_WHITE2 = 157,
-	COLOR_FG_WHITE3 = 120,
-	COLOR_FG_GREEN1 = 46,
-	COLOR_FG_GREEN2 = 40,
-	COLOR_FG_GREEN3 = 34,
-	COLOR_FG_GREEN4 = 28,
-	COLOR_FG_GREEN5 = 22
+	COLOR_FG_WHITE1 = 158,
+	COLOR_FG_GREEN1 = 48,
+	COLOR_FG_GREEN2 = 41,
+	COLOR_FG_GREEN3 = 35,
+	COLOR_FG_GREEN4 = 29,
+	COLOR_FG_GREEN5 = 23
 };
 
-//char *colors[] = { ANSI_FONT_FG_GREEN1, ANSI_FONT_FG_GREEN2, ANSI_FONT_FG_GREEN3, ANSI_FONT_FG_GREEN4, ANSI_FONT_FG_GREEN5 };
-
-uint8_t greens[] = { 48, 41, 35, 29, 22 };
+uint8_t colors[] = { 158, 48, 41, 35, 29, 238 };
 
 //
 //  The matrix' data represents a 2D array of size cols * rows.
@@ -262,15 +250,18 @@ mat_print(matrix_s *mat)
 	uint16_t value = 0;
 	uint8_t  state = STATE_NONE;
 	uint8_t  tsize = 0;
-	
+	uint8_t  color = 0;
+	uint8_t  last  = 0;
+
 	for (int r = 0; r < mat->rows; ++r)
 	{
+		last = r == mat->rows - 1;
 		for (int c = 0; c < mat->cols; ++c)
 		{
 			value = mat_get_value(mat, r, c);
 			state = val_get_state(value);
 			tsize = val_get_tsize(value);
-			uint8_t color = greens[tsize];
+			color = state == STATE_DROP ? 0 : colors[tsize];
 
 			switch (state)
 			{
@@ -288,7 +279,10 @@ mat_print(matrix_s *mat)
 						
 			}
 		}
-		fprintf(stdout, "\n");
+		if (!last)
+		{
+			fprintf(stdout, "\n");
+		}
 	}
 	// Depending on what type of buffering we use, flushing might be needed
 	fflush(stdout);
@@ -360,6 +354,13 @@ mat_rain(matrix_s *mat, float ratio)
 	}
 }
 
+/*
+ * Works its way up from a drop, adding TAIL cells and coloring them.
+ *
+ * col  : the column to work on
+ * row  : row to start in (should be the first tail cell above the drop)
+ * tsize: tail length (should have been extracted from the drop)
+ */
 static void
 col_trace(matrix_s *mat, int col, int row, int tsize)
 {
@@ -375,14 +376,18 @@ col_trace(matrix_s *mat, int col, int row, int tsize)
 		else
 		{	
 			intensity = ((float)i / (float)tsize);
-			color = 4 * intensity;
+			color = 5 * intensity; // TODO hardcoded, bad
 			mat_set_state(mat, row, col, STATE_TAIL);
-			//mat_set_tsize(mat, row, col, tsize - i);
-			mat_set_tsize(mat, row, col, color);
+			mat_set_tsize(mat, row, col, color + 1);
 		}
 	}
 }
 
+/*
+ * Works its way up from the bottom of a column, setting the color of each 
+ * TAIL cell to that of the TAIL cell above and deletes the top-most TAIL 
+ * cell of that bottom-most continuous trace.
+ */
 static void
 col_clean(matrix_s *mat, int col)
 {
@@ -476,13 +481,36 @@ mat_init(matrix_s *mat, int rows, int cols)
 }
 
 void
+mat_free(matrix_s *mat)
+{
+	free(mat->data);
+}
+
+void
 cli_clear(int rows)
 {
-	printf("\033[%dA", rows); // cursor up 
+	//printf("\033[%dA", rows); // cursor up 
 	//printf("\033[2J"); // clear screen
 	//printf("\033[H");  // cursor back to top, left
 	//printf("\033[%dT", rows); // scroll down
 	//printf("\033[%dN", rows); // scroll up
+}
+
+void
+cli_setup()
+{
+	fprintf(stdout, ANSI_HIDE_CURSOR);
+	fprintf(stdout, ANSI_FONT_BOLD);
+	printf("\033[2J"); // clear screen
+	printf("\033[H");  // cursor back to top, left
+	//printf("\n");
+}
+
+void
+cli_reset()
+{
+	fprintf(stdout, ANSI_FONT_RESET);
+	fprintf(stdout, ANSI_SHOW_CURSOR);
 }
 
 int
@@ -499,13 +527,13 @@ main(int argc, char **argv)
 	
 	// set signal handlers for the usual susspects plus window resize
 	struct sigaction sa = { .sa_handler = &on_signal };
-	sigaction(SIGINT,  &sa, NULL);
+	sigaction(SIGINT,   &sa, NULL);
 	sigaction(SIGKILL,  &sa, NULL);
 	sigaction(SIGQUIT,  &sa, NULL);
 	sigaction(SIGTERM,  &sa, NULL);
 	sigaction(SIGWINCH, &sa, NULL);
 
-	// get the terminal size, maybe (this ain't portable)
+	// get the terminal dimensions, maybe (this ain't portable)
 	struct winsize ws = { 0 };
 	ioctl(0, TIOCGWINSZ, &ws);
 
@@ -515,42 +543,42 @@ main(int argc, char **argv)
 	// this will determine the speed of the entire thing
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
 
-	//setlinebuf(stdout);
+	// set the buffering to fully buffered, we're adult and flush ourselves
 	setvbuf(stdout, NULL, _IOFBF, 0);
 
+	// initialize the matrix
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col);
 	mat_fill(&mat, STATE_NONE);
 	mat_rain(&mat, DROP_RATIO);
 
-	fprintf(stdout, ANSI_HIDE_CURSOR);
-	fprintf(stdout, ANSI_FONT_BOLD);
-	color_fg(COLOR_FG_GREEN1);
+	// prepare the terminal for our shenanigans
+	cli_setup();
 
 	running = 1;
 	while(running)
 	{
 		if (resized)
 		{
+			// get the new terminal dimensions
 			ioctl(0, TIOCGWINSZ, &ws);
+			// reinitialize the matrix
 			mat_init(&mat, ws.ws_row, ws.ws_col);
 			mat_fill(&mat, STATE_NONE);
 			mat_rain(&mat, DROP_RATIO);
 			resized = 0;
 		}
 
-		mat_glitch(&mat, GLITCH_RATIO);
-		mat_update(&mat);
-		mat_print(&mat);
+		mat_glitch(&mat, GLITCH_RATIO); // apply random defects
+		mat_update(&mat);               // move all drops down one row
+		cli_clear(ws.ws_row);
+		mat_print(&mat);                // print to the terminal
 		//mat_debug(&mat, DEBUG_TSIZE);
-
-		//cli_clear(ws.ws_row);
-
-		nanosleep(&ts, NULL);
+		nanosleep(&ts, NULL);           // zzZzZZzz
 	}
 
-	free(mat.data);
-	fprintf(stdout, ANSI_FONT_RESET);
-	fprintf(stdout, ANSI_SHOW_CURSOR);
+	// make sure all is back to normal before we exit
+	mat_free(&mat);	
+	cli_reset();
 	return EXIT_SUCCESS;
 }
