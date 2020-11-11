@@ -1,7 +1,7 @@
 #include <stdio.h>      // fprintf(), stdout, setlinebuf()
 #include <stdlib.h>     // EXIT_SUCCESS, EXIT_FAILURE, rand()
 #include <stdint.h>     // uintmax_t
-#include <time.h>       // nanosleep(), struct timespec
+#include <time.h>       // time(), time_t, nanosleep(), struct timespec
 #include <signal.h>     // sigaction(), struct sigaction
 #include <termios.h>    // struct winsize 
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
@@ -91,6 +91,7 @@ on_signal(int sig)
 		case SIGWINCH:
 			resized = 1;
 			break;
+		case SIGINT:
 		case SIGKILL:
 		case SIGQUIT:
 		case SIGTERM:
@@ -137,6 +138,10 @@ color_bg(uint8_t color)
 	fprintf(stdout, "\x1b[48;5;%hhum", color);
 }
 
+//
+// Functions to manipulate individual matrix cell values
+//
+
 static uint16_t
 val_new(uint8_t ascii, uint8_t state, uint8_t tsize)
 {
@@ -160,6 +165,10 @@ val_get_tsize(uint16_t value)
 {
 	return (value & BITMASK_TSIZE) >> 10;
 }
+
+//
+// Functions to access / set matrix values
+//
 
 static int
 mat_idx(matrix_s *mat, int row, int col)
@@ -226,6 +235,10 @@ mat_set_tsize(matrix_s *mat, int row, int col, uint8_t tsize)
 			val_new(val_get_ascii(value), val_get_state(value), tsize));
 }
 
+//
+// Functions to create, manipulate and print a matrix
+//
+
 static void
 mat_glitch(matrix_s *mat, float fraction)
 {
@@ -244,7 +257,7 @@ mat_glitch(matrix_s *mat, float fraction)
 }
 
 static void
-mat_show(matrix_s *mat)
+mat_print(matrix_s *mat)
 {
 	uint16_t value = 0;
 	uint8_t  state = STATE_NONE;
@@ -308,7 +321,7 @@ mat_debug(matrix_s *mat, int what)
 }
 
 static void
-new_drop(matrix_s *mat, int max_tries)
+mat_drop(matrix_s *mat, int max_tries)
 {
 	// TODO this could turn into an endless loop if there isn't any space
 	//      so we need to make sure the tail lengths are short enough in
@@ -331,7 +344,7 @@ new_drop(matrix_s *mat, int max_tries)
 }
 
 static void
-mat_drop(matrix_s *mat, float ratio)
+mat_rain(matrix_s *mat, float ratio)
 {
 	int total = mat->cols * mat->rows;
 	int drops = (int) ((float) total * ratio);
@@ -390,7 +403,7 @@ col_clean(matrix_s *mat, int col)
 }
 
 static void
-mat_tick(matrix_s *mat)
+mat_update(matrix_s *mat)
 {
 	uint8_t state = STATE_NONE;
 	uint8_t tsize = 0;
@@ -408,7 +421,7 @@ mat_tick(matrix_s *mat)
 				if (r == mat->rows - 1) // bottom row)
 				{
 					mat_set_state(mat, r, c, STATE_TAIL);
-					new_drop(mat, mat->cols);
+					mat_drop(mat, mat->cols);
 					col_trace(mat, c, r, tsize);
 					col_clean(mat, c);
 				}
@@ -484,16 +497,22 @@ main(int argc, char **argv)
 	// https://stackoverflow.com/a/33206814/3316645 
 	// https://jdebp.eu/FGA/clearing-the-tui-screen.html#POSIX
 	
+	// set signal handlers for the usual susspects plus window resize
 	struct sigaction sa = { .sa_handler = &on_signal };
+	sigaction(SIGINT,  &sa, NULL);
 	sigaction(SIGKILL,  &sa, NULL);
 	sigaction(SIGQUIT,  &sa, NULL);
 	sigaction(SIGTERM,  &sa, NULL);
 	sigaction(SIGWINCH, &sa, NULL);
 
+	// get the terminal size, maybe (this ain't portable)
 	struct winsize ws = { 0 };
 	ioctl(0, TIOCGWINSZ, &ws);
 
-	//struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	// seed the random number generator with the current unix time
+	srand(time(NULL));
+
+	// this will determine the speed of the entire thing
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
 
 	//setlinebuf(stdout);
@@ -502,7 +521,7 @@ main(int argc, char **argv)
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col);
 	mat_fill(&mat, STATE_NONE);
-	mat_drop(&mat, DROP_RATIO);
+	mat_rain(&mat, DROP_RATIO);
 
 	fprintf(stdout, ANSI_HIDE_CURSOR);
 	fprintf(stdout, ANSI_FONT_BOLD);
@@ -523,8 +542,8 @@ main(int argc, char **argv)
 		}
 
 		mat_glitch(&mat, GLITCH_RATIO);
-		mat_tick(&mat);
-		mat_show(&mat);
+		mat_update(&mat);
+		mat_print(&mat);
 		//mat_debug(&mat, DEBUG_TSIZE);
 
 		//cli_clear(ws.ws_row);
