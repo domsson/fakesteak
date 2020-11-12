@@ -33,8 +33,8 @@
 //#define TSIZE_MIN 2
 //#define TSIZE_MAX 8
 
-#define GLITCH_RATIO 0.015
-#define DROP_RATIO   0.015
+#define GLITCH_RATIO 0.02
+#define DROP_RATIO   0.02
 
 static volatile int resized;   // window resize event received
 static volatile int running;   // controls running of the main loop 
@@ -272,21 +272,21 @@ mat_print(matrix_s *mat)
 			switch (state)
 			{
 				case STATE_NONE:
-					fprintf(stdout, " ");
+					fputc(' ', stdout);
 					break;
 				case STATE_DROP:
 					color_fg(COLOR_FG_WHITE1);
-					fprintf(stdout, "%c", val_get_ascii(value));
+					fputc(val_get_ascii(value), stdout);
 					break;
 				case STATE_TAIL:
 					color_fg(color);
-					fprintf(stdout, "%c", val_get_ascii(value));
+					fputc(val_get_ascii(value), stdout);
 					break;
 			}
 		}
 		if (!last)
 		{
-			fprintf(stdout, "\n");
+			fputc('\n', stdout);
 		}
 	}
 	// Depending on what type of buffering we use, flushing might be needed
@@ -466,21 +466,13 @@ mat_update(matrix_s *mat)
 	size_t drops_to_add  = (size_t) ((float) drops_missing / (float) mat->rows);
 
 	int col = 0;
-	//uint8_t state_this  = STATE_NONE;
-	//uint8_t state_below = STATE_NONE;
 
 	for (size_t i = 0; i <= drops_to_add; ++i)
 	{
 		col = rand_int(0, mat->cols - 1);
-		//state_this  = mat_get_state(mat, 0, col);
-		//state_below = mat_get_state(mat, 1, col);
 		
-		// only place drop when there is free space
-		// if (state_this == STATE_NONE && state_below == STATE_NONE)
-		{
-			mat_add_drop(mat, 0, col, rand_int(TSIZE_MIN, TSIZE_MAX));
-			++mat->drop_count;
-		}
+		mat_add_drop(mat, 0, col, rand_int(TSIZE_MIN, TSIZE_MAX));
+		++mat->drop_count;
 	}
 
 	// move each column down one cell, possibly dropping some drops
