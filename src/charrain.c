@@ -366,6 +366,7 @@ mat_add_drop(matrix_s *mat, int row, int col, int tsize)
 		if (i == 0)
 		{
 			mat_put_cell_drop(mat, row, col, tsize);
+			++mat->drop_count;
 		}
 		else
 		{
@@ -391,7 +392,6 @@ mat_rain(matrix_s *mat, float ratio)
 		r = rand_int(0, mat->rows - 1);
 		mat_add_drop(mat, r, c, rand_int(TSIZE_MIN, TSIZE_MAX));
 	}
-
 }
 
 /*
@@ -472,7 +472,6 @@ mat_update(matrix_s *mat)
 		col = rand_int(0, mat->cols - 1);
 		
 		mat_add_drop(mat, 0, col, rand_int(TSIZE_MIN, TSIZE_MAX));
-		++mat->drop_count;
 	}
 
 	// move each column down one cell, possibly dropping some drops
@@ -587,7 +586,7 @@ main(int argc, char **argv)
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col, DROP_RATIO);
 	mat_fill(&mat, STATE_NONE);
-	//mat_rain(&mat, DROP_RATIO);
+	mat_rain(&mat, DROP_RATIO);
 
 	// prepare the terminal for our shenanigans
 	cli_setup();
@@ -602,7 +601,7 @@ main(int argc, char **argv)
 			// reinitialize the matrix
 			mat_init(&mat, ws.ws_row, ws.ws_col, DROP_RATIO);
 			mat_fill(&mat, STATE_NONE);
-			//mat_rain(&mat, DROP_RATIO);
+			mat_rain(&mat, DROP_RATIO);
 			resized = 0;
 		}
 
