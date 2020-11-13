@@ -362,30 +362,29 @@ mat_print(matrix_s *mat)
 	uint16_t value = 0;
 	uint8_t  state = STATE_NONE;
 
-	for (int r = 0; r < mat->rows; ++r)
-	{
-		for (int c = 0; c < mat->cols; ++c)
-		{
-			value = mat_get_value(mat, r, c);
-			state = val_get_state(value);
+	size_t size = mat->cols * mat->rows;
 
-			switch (state)
-			{
-				case STATE_NONE:
-					fputc(' ', stdout);
-					break;
-				case STATE_DROP:
-					color_fg(colors[0]);
-					fputc(val_get_ascii(value), stdout);
-					break;
-				case STATE_TAIL:
-					color_fg(colors[val_get_tsize(value)]);
-					fputc(val_get_ascii(value), stdout);
-					break;
-			}
+	for (int i = 0; i < size; ++i)
+	{
+		value = mat->data[i];
+		state = val_get_state(value);
+
+		switch (state)
+		{
+			case STATE_NONE:
+				fputc(' ', stdout);
+				break;
+			case STATE_DROP:
+				color_fg(colors[0]);
+				fputc(val_get_ascii(value), stdout);
+				break;
+			case STATE_TAIL:
+				color_fg(colors[val_get_tsize(value)]);
+				fputc(val_get_ascii(value), stdout);
+				break;
 		}
 	}
-	
+
 	// Depending on what type of buffering we use, flushing might be needed
 	fflush(stdout);
 }
@@ -396,30 +395,23 @@ mat_debug(matrix_s *mat, int what)
 	fprintf(stdout, "\x1b[0m");
 
 	uint16_t value = 0;
-	uint8_t  last  = 0;
 
-	for (int r = 0; r < mat->rows; ++r)
+	size_t size = mat->cols * mat->rows;
+
+	for (int i = 0; i < size; ++i)
 	{
-		last = r == mat->rows - 1;
-		for (int c = 0; c < mat->cols; ++c)
+		value = mat->data[i];
+		switch (what)
 		{
-			value = mat_get_value(mat, r, c);
-			switch (what)
-			{
-				case DEBUG_STATE:
-					fprintf(stdout, "%hhu", val_get_state(value));
-					break;
-				case DEBUG_ASCII:
-					fprintf(stdout, "%c",   val_get_ascii(value));
-					break;
-				case DEBUG_TSIZE:
-					fprintf(stdout, "%hhu", val_get_tsize(value));
-					break;
-			}
-		}
-		if (!last)
-		{
-			fprintf(stdout, "\n");
+			case DEBUG_STATE:
+				fprintf(stdout, "%hhu", val_get_state(value));
+				break;
+			case DEBUG_ASCII:
+				fprintf(stdout, "%c",   val_get_ascii(value));
+				break;
+			case DEBUG_TSIZE:
+				fprintf(stdout, "%hhu", val_get_tsize(value));
+				break;
 		}
 	}
 	fflush(stdout);
