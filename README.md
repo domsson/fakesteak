@@ -33,12 +33,12 @@ You can just run the included `build` script. After that, you should be able to 
 
 I've compared CPU and RAM usage against that of `cmatrix`, `tmatrix` and `unimatrix` a little. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all three with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
 
-|           |  CPU  |   RAM | Language | ran as                     |
-|-----------|-------|-------|----------|----------------------------|
-|  charrain |  ~7 % | 162 K | C        | charrain                   |
-|   cmatrix |  ~7 % | 837 K | C        | cmatrix -b -u10            |
-|   tmatrix |  ~6 % | 2.5 M | C++      | tmatrix                    |
-| unimatrix | ~11 % | 9.4 M | Python   | unimatrix -b -s=90 -l=o -f |
+|           | CPU   | RAM    | Language | ran as                     |
+|-----------|-------|--------|----------|----------------------------|
+|  charrain |  ~7 % | ~170 K | C        | charrain                   |
+|   cmatrix |  ~7 % | ~900 K | C        | cmatrix -b -u10            |
+|   tmatrix |  ~6 % | ~2.5 M | C++      | tmatrix                    |
+| unimatrix | ~11 % | ~9.4 M | Python   | unimatrix -b -s=90 -l=o -f |
 
 It looks like `tmatrix` is the most efficient regarding CPU time, but also uses the most amount of memory amongst the C/C++ implementations. `cmatrix` and `charrain` seem to perform very similar in the CPU department, but `charrain` only uses a fraction of the memory. As expected, `unimatrix` uses the most CPU and memory.
 
