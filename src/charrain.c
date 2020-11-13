@@ -18,7 +18,7 @@
 #define PROGRAM_VER_MINOR 1
 #define PROGRAM_VER_PATCH 0
 
-// do not change these
+// do not change these 
 
 #define ANSI_FONT_RESET "\x1b[0m"
 #define ANSI_FONT_BOLD  "\x1b[1m"
@@ -44,6 +44,8 @@
 
 #define ASCII_MIN 32
 #define ASCII_MAX 126
+
+// these can be tweaked if need be
 
 #define ERROR_FACTOR_MIN 0.01
 #define ERROR_FACTOR_MAX 0.10
@@ -155,11 +157,11 @@ help(const char *invocation, FILE *where)
 	fprintf(where, "USAGE\n");
 	fprintf(where, "\t%s [OPTIONS...]\n\n", invocation);
 	fprintf(where, "OPTIONS\n");
-	fprintf(where, "\t-b\tset background color (0 to 255)\n");
-	fprintf(where, "\t-d\tdrops ratio (default is 0.02)\n");
-	fprintf(where, "\t-g\tglitch ratio (default is 0.02)\n");
+	fprintf(where, "\t-b\tset background color (0 - 255)\n");
+	fprintf(where, "\t-d\tdrops ratio (default is %1.2f)\n", DROPS_FACTOR_DEF);
+	fprintf(where, "\t-g\tglitch ratio (default is %1.2f)\n", ERROR_FACTOR_DEF);
 	fprintf(where, "\t-h\tprint this help text and exit\n");
-	fprintf(where, "\t-s\tspeed factor (default is 1.0)\n");
+	fprintf(where, "\t-s\tspeed factor (default is %1.2f)\n", SPEED_FACTOR_DEF);
 	fprintf(where, "\t-V\tprint version information and exit\n");
 }
 
