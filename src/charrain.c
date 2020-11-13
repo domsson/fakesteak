@@ -265,11 +265,9 @@ mat_print(matrix_s *mat)
 {
 	uint16_t value = 0;
 	uint8_t  state = STATE_NONE;
-	uint8_t  last  = 0;
 
 	for (int r = 0; r < mat->rows; ++r)
 	{
-		last = r == mat->rows - 1;
 		for (int c = 0; c < mat->cols; ++c)
 		{
 			value = mat_get_value(mat, r, c);
@@ -290,11 +288,8 @@ mat_print(matrix_s *mat)
 					break;
 			}
 		}
-		if (!last)
-		{
-			fputc('\n', stdout);
-		}
 	}
+	
 	// Depending on what type of buffering we use, flushing might be needed
 	fflush(stdout);
 }
@@ -545,7 +540,7 @@ cli_clear(int rows)
 {
 	//printf("\033[%dA", rows); // cursor up 
 	//printf("\033[2J"); // clear screen
-	//printf("\033[H");  // cursor back to top, left
+	printf("\033[H");  // cursor back to top, left
 	//printf("\033[%dT", rows); // scroll down
 	//printf("\033[%dN", rows); // scroll up
 }
@@ -630,6 +625,7 @@ main(int argc, char **argv)
 			resized = 0;
 		}
 
+		cli_clear(mat.rows);
 		mat_print(&mat);                // print to the terminal
 		mat_glitch(&mat, GLITCH_RATIO); // apply random defects
 		mat_update(&mat);               // move all drops down one row

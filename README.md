@@ -14,8 +14,7 @@ This is my personal implementation of a green character rain screen as seen in "
 
 ## State
 
-- Only tested on Linux
-- Works well in urxvt, but flickers in all other terminals I've testet it in ([help, please?](https://github.com/domsson/charrain/issues/1))
+Everything seems to be working well on Linux, using urxvt, xterm, lxterm or uxterm. Other OS and terminals have not yet been tested.
 
 ## Dependencies / Requirements
 
@@ -26,7 +25,9 @@ This is my personal implementation of a green character rain screen as seen in "
 
 You can just run the included `build` script. After that, you should be able to run it from the `bin` directory:
 
+    chmod +x ./build
     ./build
+    chmod +x ./bin/charrain
     ./bin/charrain
 
 ## Performance
@@ -42,5 +43,5 @@ I've compared CPU and RAM usage against that of `cmatrix`, `tmatrix` and `unimat
 
 It looks like `tmatrix` is the most efficient regarding CPU time, but also uses the most amount of memory amongst the C/C++ implementations. `cmatrix` and `charrain` seem to perform very similar in the CPU department, but `charrain` only uses a fraction of the memory. As expected, `unimatrix` uses the most CPU and memory.
 
-Note, however, the shortcomings in features, portability and terminal compatibilty that `charrain` has compared to the other three.
+Note, however, `charrain`s shortcomings in features and portability compared to the other three.
 
