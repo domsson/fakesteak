@@ -19,8 +19,8 @@ This is my personal implementation of a green character rain screen as seen in "
 
 ## Dependencies / Requirements
 
-- Terminal that supports 256 color mode (8 bit colors)
-- Requires `TIOCGWINSZ` to be available to query the terminal size
+- Terminal that supports 256 colors (8 bit color mode)
+- Requires `TIOCGWINSZ` to be supported (to query the terminal size)
 
 ## Building / Running
 
