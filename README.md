@@ -2,7 +2,7 @@
 
 ![charrain](example2.png)
 
-This is my personal implementation of a green character rain screen as seen in "The Matrix". For similar projects that are more mature and offer better portability and plenty of options, check `cmatrix`, `tmatrix` and `unimatrix`. I'm writing `charrain` for fun and practice.
+This is my personal implementation of a green character rain screen as seen in "The Matrix". For similar projects that are more mature and offer better portability and plenty of options, check [`cmatrix`](https://github.com/abishekvashok/cmatrix), [`tmatrix`](https://github.com/M4444/TMatrix) and [`unimatrix`](https://github.com/will8211/unimatrix). I'm writing `charrain` for fun and practice.
 
 ## Objectives
 
@@ -31,13 +31,16 @@ You can just run the included `build` script. After that, you should be able to 
 
 ## Performance
 
-I've compared CPU and RAM usage against that of `cmatrix` and `tmatrix` a little. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all three with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
+I've compared CPU and RAM usage against that of `cmatrix`, `tmatrix` and `unimatrix` a little. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all three with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
 
-|          |  CPU |   RAM |
-|----------|------|-------|
-| charrain |  7 % | 162 K |
-|  cmatrix |  7 % | 837 K |
-|  tmatrix |  6 % | 2.5 M |
+|           |  CPU |   RAM | Language |
+|-----------|------|-------|----------|
+|  charrain | ~7 % | 162 K | C        |
+|   cmatrix | ~7 % | 837 K | C        |
+|   tmatrix | ~6 % | 2.5 M | C++      |
+| unimatrix | ~8 % | 9.4 M | Python   |
 
-It looks like `tmatrix` is the most efficient regarding CPU time, but also uses the most amount of memory. `cmatrix` and `charrain` seem to perform very similar in the CPU department, but `charrain` only uses about a fourth of the memory. Note, however, the shortcomings in features, portability and terminal compatibilty that `charrain` has compared to the other two.
+It looks like `tmatrix` is the most efficient regarding CPU time, but also uses the most amount of memory amongst the C/C++ implementations. `cmatrix` and `charrain` seem to perform very similar in the CPU department, but `charrain` only uses about a fourth of the memory. As expected, `unimatrix` uses the most CPU and memory, although the difference in CPU is actually minimal.
+
+Note, however, the shortcomings in features, portability and terminal compatibilty that `charrain` has compared to the other three.
 
