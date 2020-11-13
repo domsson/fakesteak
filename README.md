@@ -1,6 +1,6 @@
 # charrain
 
-![charrain](example.png)
+![charrain](example2.png)
 
 This is my personal implementation of a green character rain screen as seen in "The Matrix". For similar projects that are more mature and offer better portability and plenty of options, check `cmatrix`, `tmatrix` and `unimatrix`. I'm writing `charrain` for fun and practice.
 
