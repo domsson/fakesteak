@@ -111,6 +111,7 @@ typedef struct options
 	float   speed;         // speed factor
 	float   drops;         // drops ratio / factor
 	float   error;         // error ratio / factor
+	time_t  rand;          // seed for rand()
 	uint8_t bg_color;      // custom background color
 	uint8_t bg_set : 1;    // set background color
 	uint8_t help : 1;      // show help and exit
@@ -123,7 +124,7 @@ parse_args(int argc, char **argv, options_s *opts)
 {
 	opterr = 0;
 	int o;
-	while ((o = getopt(argc, argv, "b:d:g:hs:V")) != -1)
+	while ((o = getopt(argc, argv, "b:d:e:hr:s:V")) != -1)
 	{
 		switch (o)
 		{
@@ -134,11 +135,14 @@ parse_args(int argc, char **argv, options_s *opts)
 			case 'd':
 				opts->drops = atof(optarg);
 				break;
-			case 'g':
+			case 'e':
 				opts->error = atof(optarg);
 				break;
 			case 'h':
 				opts->help = 1;
+				break;
+			case 'r':
+				opts->rand = atol(optarg);
 				break;
 			case 's':
 				opts->speed = atof(optarg);
@@ -158,8 +162,9 @@ help(const char *invocation, FILE *where)
 	fprintf(where, "OPTIONS\n");
 	fprintf(where, "\t-b\tset background color (0 - 255)\n");
 	fprintf(where, "\t-d\tdrops ratio (default is %1.2f)\n", DROPS_FACTOR_DEF);
-	fprintf(where, "\t-g\tglitch ratio (default is %1.2f)\n", ERROR_FACTOR_DEF);
+	fprintf(where, "\t-e\terror ratio (default is %1.2f)\n", ERROR_FACTOR_DEF);
 	fprintf(where, "\t-h\tprint this help text and exit\n");
+	fprintf(where, "\t-r\tseed for the random number generator\n");
 	fprintf(where, "\t-s\tspeed factor (default is %1.2f)\n", SPEED_FACTOR_DEF);
 	fprintf(where, "\t-V\tprint version information and exit\n");
 }
@@ -715,6 +720,11 @@ main(int argc, char **argv)
 		opts.error = ERROR_FACTOR_DEF;
 	}
 
+	if (opts.rand == 0)
+	{
+		opts.rand = time(NULL);
+	}
+
 	cap_float(&opts.speed, SPEED_FACTOR_MIN, SPEED_FACTOR_MAX);
 	cap_float(&opts.drops, DROPS_FACTOR_MIN, DROPS_FACTOR_MAX);
 	cap_float(&opts.error, ERROR_FACTOR_MIN, ERROR_FACTOR_MAX);
@@ -732,7 +742,7 @@ main(int argc, char **argv)
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 - less };
 	
 	// seed the random number generator with the current unix time
-	srand(time(NULL));
+	srand(opts.rand);
 
 	// initialize the matrix
 	matrix_s mat = { 0 }; 
