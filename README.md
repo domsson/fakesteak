@@ -19,7 +19,7 @@ This is my personal implementation of a green character rain screen as seen in "
 
 ## Dependencies / Requirements
 
-- Terminal that supports 256 colors (8 bit color mode)
+- Terminal that supports 256 colors ([8 bit color mode](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit))
 - Requires `TIOCGWINSZ` to be supported (to query the terminal size)
 
 ## Building / Running
