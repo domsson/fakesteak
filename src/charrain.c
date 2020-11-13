@@ -434,7 +434,7 @@ static void
 mat_put_cell_tail(matrix_s *mat, int row, int col, int tsize, int tnext)
 {
 	float intensity = (float) tnext / (float) tsize; // 1 for end of trace, 0.x for beginning
-	int color = ceil(5 * intensity); // TODO hardcoded, bad
+	int color = ceil(NUM_COLORS * intensity);
 	mat_set_state(mat, row, col, STATE_TAIL);
 	mat_set_tsize(mat, row, col, color);
 }
