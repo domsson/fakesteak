@@ -4,7 +4,6 @@
 #include <unistd.h>     // getopt(), STDOUT_FILENO
 #include <math.h>       // ceil()
 #include <time.h>       // time(), nanosleep(), struct timespec
-#include <string.h>     // memmove()
 #include <signal.h>     // sigaction(), struct sigaction
 #include <termios.h>    // struct winsize 
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
