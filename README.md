@@ -2,7 +2,7 @@
 
 ![charrain](example.png)
 
-This is my personal implementation of a green character rain screen as seen in "The Matrix". There are great implementations out there already, for example `cmatrix`, `unimatrix` and `tmatrix`. They do a pretty good job and the goal of this project is not to compete with them. Rather, this is a recreational project for fun and practice.
+This is my personal implementation of a green character rain screen as seen in "The Matrix". For similar projects that are more mature and offer better portability and plenty of options, check `cmatrix`, `tmatrix` and `unimatrix`. I'm writing `charrain` for fun and practice.
 
 ## Objectives
 
@@ -22,7 +22,7 @@ This is my personal implementation of a green character rain screen as seen in "
 - Terminal that supports 256 color mode (8 bit colors)
 - Requires `TIOCGWINSZ` to be available to query the terminal size
 
-## Building and running.
+## Building / Running
 
 You can just run the included `build` script. After that, you should be able to run it from the `bin` directory:
 
