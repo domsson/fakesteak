@@ -52,7 +52,7 @@
 
 #define DROPS_FACTOR_MIN 0.01
 #define DROPS_FACTOR_MAX 0.10
-#define DROPS_FACTOR_DEF 0.02
+#define DROPS_FACTOR_DEF 0.0001
 
 #define SPEED_FACTOR_MIN 0.01
 #define SPEED_FACTOR_MAX 1.00
@@ -434,7 +434,7 @@ static void
 mat_put_cell_tail(matrix_s *mat, int row, int col, int tsize, int tnext)
 {
 	float intensity = (float) tnext / (float) tsize; // 1 for end of trace, 0.x for beginning
-	int color = ceil(NUM_COLORS * intensity);
+	int color = ceil((NUM_COLORS-1) * intensity);
 	mat_set_state(mat, row, col, STATE_TAIL);
 	mat_set_tsize(mat, row, col, color);
 }
