@@ -15,7 +15,7 @@ This is my personal implementation of a green character rain screen as seen in "
 ## State
 
 - Only tested on Linux
-- Works well in urxvt, but flickers in all other terminals I've testet it in ([help, please?](issues/1))
+- Works well in urxvt, but flickers in all other terminals I've testet it in ([help, please?](https://github.com/domsson/charrain/issues/1))
 
 ## Dependencies / Requirements
 
