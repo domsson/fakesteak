@@ -1,13 +1,22 @@
 #include <stdio.h>      // fprintf(), stdout, setlinebuf()
 #include <stdlib.h>     // EXIT_SUCCESS, EXIT_FAILURE, rand()
 #include <stdint.h>     // uint8_t, uint16_t
-#include <unistd.h>     // STDOUT_FILENO
+#include <unistd.h>     // getopt(), STDOUT_FILENO
 #include <math.h>       // ceil()
 #include <time.h>       // time(), nanosleep(), struct timespec
 #include <string.h>     // memmove()
 #include <signal.h>     // sigaction(), struct sigaction
 #include <termios.h>    // struct winsize 
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
+
+// program information
+
+#define PROGRAM_NAME "charrain"
+#define PROGRAM_URL  "https://github.com/domsson/charrain"
+
+#define PROGRAM_VER_MAJOR 0
+#define PROGRAM_VER_MINOR 1
+#define PROGRAM_VER_PATCH 0
 
 // do not change these
 
@@ -33,13 +42,20 @@
 #define TSIZE_MIN 8
 #define TSIZE_MAX 63
 
-//#define TSIZE_MIN 2
-//#define TSIZE_MAX 8
+#define ASCII_MIN 32
+#define ASCII_MAX 126
 
-// you can adjust these to your liking
+#define ERROR_FACTOR_MIN 0.01
+#define ERROR_FACTOR_MAX 0.10
+#define ERROR_FACTOR_DEF 0.02
 
-#define GLITCH_RATIO 0.02
-#define DROP_RATIO   0.02
+#define DROPS_FACTOR_MIN 0.01
+#define DROPS_FACTOR_MAX 0.10
+#define DROPS_FACTOR_DEF 0.02
+
+#define SPEED_FACTOR_MIN 0.01
+#define SPEED_FACTOR_MAX 1.00
+#define SPEED_FACTOR_DEF 0.10
 
 // rain colors (8 bit codes)
 //
@@ -54,7 +70,8 @@ static uint8_t colors[] = { 231, 48, 41, 35, 29, 238 };
 
 // make sure this matches the number of elements in `colors`
 
-#define NUM_COLORS 6
+//#define NUM_COLORS 6
+#define NUM_COLORS sizeof(colors) / sizeof(colors[0])
 
 // these are flags used for signal handling
 
@@ -88,6 +105,72 @@ typedef struct matrix
 }
 matrix_s;
 
+typedef struct options
+{
+	float   speed;         // speed factor
+	float   drops;         // drops ratio / factor
+	float   error;         // error ratio / factor
+	uint8_t bg_color;      // custom background color
+	uint8_t bg_set : 1;    // set background color
+	uint8_t help : 1;      // show help and exit
+	uint8_t version : 1;   // show version and exit
+}
+options_s;
+
+static void
+parse_args(int argc, char **argv, options_s *opts)
+{
+	opterr = 0;
+	int o;
+	while ((o = getopt(argc, argv, "b:d:g:hs:V")) != -1)
+	{
+		switch (o)
+		{
+			case 'b':
+				opts->bg_set = 1;
+				opts->bg_color = atoi(optarg);
+				break;
+			case 'd':
+				opts->drops = atof(optarg);
+				break;
+			case 'g':
+				opts->error = atof(optarg);
+				break;
+			case 'h':
+				opts->help = 1;
+				break;
+			case 's':
+				opts->speed = atof(optarg);
+				break;
+			case 'V':
+				opts->version = 1;
+				break;
+		}
+	}
+}
+
+static void
+help(const char *invocation, FILE *where)
+{
+	fprintf(where, "USAGE\n");
+	fprintf(where, "\t%s [OPTIONS...]\n\n", invocation);
+	fprintf(where, "OPTIONS\n");
+	fprintf(where, "\t-b\tset background color (0 to 255)\n");
+	fprintf(where, "\t-d\tdrops ratio (default is 0.02)\n");
+	fprintf(where, "\t-g\tglitch ratio (default is 0.02)\n");
+	fprintf(where, "\t-h\tprint this help text and exit\n");
+	fprintf(where, "\t-s\tspeed factor (default is 1.0)\n");
+	fprintf(where, "\t-V\tprint version information and exit\n");
+}
+
+static void
+version(FILE *where)
+{
+	fprintf(where, "%s %d.%d.%d\n%s\n", PROGRAM_NAME,
+			PROGRAM_VER_MAJOR, PROGRAM_VER_MINOR, PROGRAM_VER_PATCH,
+			PROGRAM_URL);
+}
+
 static void
 on_signal(int sig)
 {
@@ -103,6 +186,13 @@ on_signal(int sig)
 			break;
 	}
 	handled = sig;
+}
+
+static void 
+cap_float(float *val, float min, float max)
+{
+	if (*val < min) { *val = min; return; }
+	if (*val > max) { *val = max; return; }
 }
 
 static int
@@ -127,7 +217,7 @@ rand_int_mincap(int min, int max)
 static uint8_t 
 rand_ascii()
 {
-	return rand_int_mincap(32, 126);
+	return rand_int_mincap(ASCII_MIN, ASCII_MAX);
 }
 
 static void
@@ -570,18 +660,22 @@ cli_reset()
 	setvbuf(stdout, NULL, _IOLBF, 0);
 }
 
+
+/*
+ * Some good resources that have helped me with this project:
+ *
+ * https://youtu.be/MvEXkd3O2ow?t=26
+ * https://matrix.logic-wire.de/
+ *
+ * https://man7.org/linux/man-pages/man4/tty_ioctl.4.html
+ * https://en.wikipedia.org/wiki/ANSI_escape_code
+ * https://gist.github.com/XVilka/8346728
+ * https://stackoverflow.com/a/33206814/3316645 
+ * https://jdebp.eu/FGA/clearing-the-tui-screen.html#POSIX
+ */
 int
 main(int argc, char **argv)
 {
-	// https://youtu.be/MvEXkd3O2ow?t=26
-	// https://matrix.logic-wire.de/
-
-	// https://man7.org/linux/man-pages/man4/tty_ioctl.4.html
-	// https://en.wikipedia.org/wiki/ANSI_escape_code
-	// https://gist.github.com/XVilka/8346728
-	// https://stackoverflow.com/a/33206814/3316645 
-	// https://jdebp.eu/FGA/clearing-the-tui-screen.html#POSIX
-	
 	// set signal handlers for the usual susspects plus window resize
 	struct sigaction sa = { .sa_handler = &on_signal };
 	sigaction(SIGINT,   &sa, NULL);
@@ -589,23 +683,59 @@ main(int argc, char **argv)
 	sigaction(SIGTERM,  &sa, NULL);
 	sigaction(SIGWINCH, &sa, NULL);
 
+	// parse command line options
+	options_s opts = { 0 };
+	parse_args(argc, argv, &opts);
+
+	if (opts.help)
+	{
+		help(argv[0], stdout);
+		return EXIT_SUCCESS;
+	}
+
+	if (opts.version)
+	{
+		version(stdout);
+		return EXIT_SUCCESS;
+	}
+
+	if (opts.speed == 0.0)
+	{
+		opts.speed = SPEED_FACTOR_DEF;
+	}
+
+	if (opts.drops == 0.0)
+	{
+		opts.drops = DROPS_FACTOR_DEF;
+	}
+
+	if (opts.error == 0.0)
+	{
+		opts.error = ERROR_FACTOR_DEF;
+	}
+
+	cap_float(&opts.speed, SPEED_FACTOR_MIN, SPEED_FACTOR_MAX);
+	cap_float(&opts.drops, DROPS_FACTOR_MIN, DROPS_FACTOR_MAX);
+	cap_float(&opts.error, ERROR_FACTOR_MIN, ERROR_FACTOR_MAX);
+
 	// get the terminal dimensions
 	struct winsize ws = { 0 };
 	if (cli_wsize(&ws) == -1)
 	{
-		fprintf(stderr, "Failed to determine terminal window size\n");
+		fprintf(stderr, "Failed to determine terminal size\n");
 		return EXIT_FAILURE;
 	}
 
 	// this will determine the speed of the entire thing
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	int less = 90000000 * opts.speed;
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 - less };
 	
 	// seed the random number generator with the current unix time
 	srand(time(NULL));
 
 	// initialize the matrix
 	matrix_s mat = { 0 }; 
-	mat_init(&mat, ws.ws_row, ws.ws_col, DROP_RATIO);
+	mat_init(&mat, ws.ws_row, ws.ws_col, opts.drops);
 	mat_fill(&mat);
 
 	// prepare the terminal for our shenanigans
@@ -619,7 +749,7 @@ main(int argc, char **argv)
 			cli_wsize(&ws);
 			
 			// reinitialize the matrix
-			mat_init(&mat, ws.ws_row, ws.ws_col, DROP_RATIO);
+			mat_init(&mat, ws.ws_row, ws.ws_col, opts.drops);
 			mat_fill(&mat);
 			mat_rain(&mat);
 			resized = 0;
@@ -627,7 +757,7 @@ main(int argc, char **argv)
 
 		cli_clear(mat.rows);
 		mat_print(&mat);                // print to the terminal
-		mat_glitch(&mat, GLITCH_RATIO); // apply random defects
+		mat_glitch(&mat, opts.error);   // apply random defects
 		mat_update(&mat);               // move all drops down one row
 		//mat_debug(&mat, DEBUG_TSIZE);
 		nanosleep(&ts, NULL);
