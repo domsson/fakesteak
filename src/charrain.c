@@ -1,6 +1,7 @@
 #include <stdio.h>      // fprintf(), stdout, setlinebuf()
 #include <stdlib.h>     // EXIT_SUCCESS, EXIT_FAILURE, rand()
 #include <stdint.h>     // uint8_t, uint16_t
+#include <unistd.h>     // STDOUT_FILENO
 #include <math.h>       // ceil()
 #include <time.h>       // time(), nanosleep(), struct timespec
 #include <string.h>     // memmove()
@@ -8,12 +9,14 @@
 #include <termios.h>    // struct winsize 
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
 
+// do not change these
+
 #define ANSI_FONT_RESET "\x1b[0m"
 #define ANSI_FONT_BOLD  "\x1b[1m"
 #define ANSI_FONT_FAINT "\x1b[2m"
 
-#define ANSI_HIDE_CURSOR  "\e[?25l"
-#define ANSI_SHOW_CURSOR  "\e[?25h"
+#define ANSI_HIDE_CURSOR "\e[?25l"
+#define ANSI_SHOW_CURSOR "\e[?25h"
 
 #define BITMASK_ASCII 0x00FF
 #define BITMASK_STATE 0x0300
@@ -33,28 +36,35 @@
 //#define TSIZE_MIN 2
 //#define TSIZE_MAX 8
 
+// you can adjust these to your liking
+
 #define GLITCH_RATIO 0.02
 #define DROP_RATIO   0.02
+
+// rain colors (8 bit codes)
+//
+// index 0 is the color for the drop, the remaining colors
+// will be used for the tail, starting from index 1 for the 
+// cell closest to the drop and the last color being used 
+// for the cell furthest from the drop
+//
+// https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
+
+static uint8_t colors[] = { 231, 48, 41, 35, 29, 238 };
+
+// make sure this matches the number of elements in `colors`
+
+#define NUM_COLORS 6
+
+// these are flags used for signal handling
 
 static volatile int resized;   // window resize event received
 static volatile int running;   // controls running of the main loop 
 static volatile int handled;   // last signal that has been handled 
 
-// https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
-enum colors {
-	COLOR_FG_WHITE1 = 158,
-	COLOR_FG_GREEN1 = 48,
-	COLOR_FG_GREEN2 = 41,
-	COLOR_FG_GREEN3 = 35,
-	COLOR_FG_GREEN4 = 29,
-	COLOR_FG_GREEN5 = 23
-};
-
-uint8_t colors[] = { 158, 48, 41, 35, 29, 238 };
-
 //
-//  The matrix' data represents a 2D array of size cols * rows.
-//  Every data element is a 16 bit int which stores information
+//  the matrix' data represents a 2D array of size cols * rows.
+//  every data element is a 16 bit int which stores information
 //  about that matrix cell as follows:
 //
 //  128 64  32  16   8   4   2   1  128 64  32  16   8   4   2   1
@@ -70,11 +80,11 @@ uint8_t colors[] = { 158, 48, 41, 35, 29, 238 };
 
 typedef struct matrix
 {
-	uint16_t *data;
-	int cols;
-	int rows;
-	size_t drop_count;
-	float  drop_ratio;
+	uint16_t *data;     // matrix data
+	uint16_t  cols;     // number of columns
+	uint16_t  rows;     // number of rows
+	size_t drop_count;  // current number of drops
+	float  drop_ratio;  // desired ratio of drops
 }
 matrix_s;
 
@@ -123,13 +133,13 @@ rand_ascii()
 static void
 color_fg(uint8_t color)
 {
-	fprintf(stdout, "\x1b[38;5;%hhum", color);
+	printf("\x1b[38;5;%hhum", color);
 }
 
 static void
 color_bg(uint8_t color)
 {
-	fprintf(stdout, "\x1b[48;5;%hhum", color);
+	printf("\x1b[48;5;%hhum", color);
 }
 
 //
@@ -255,8 +265,6 @@ mat_print(matrix_s *mat)
 {
 	uint16_t value = 0;
 	uint8_t  state = STATE_NONE;
-	uint8_t  tsize = 0;
-	uint8_t  color = 0;
 	uint8_t  last  = 0;
 
 	for (int r = 0; r < mat->rows; ++r)
@@ -266,8 +274,6 @@ mat_print(matrix_s *mat)
 		{
 			value = mat_get_value(mat, r, c);
 			state = val_get_state(value);
-			tsize = val_get_tsize(value);
-			color = state == STATE_DROP ? 0 : colors[tsize];
 
 			switch (state)
 			{
@@ -275,11 +281,11 @@ mat_print(matrix_s *mat)
 					fputc(' ', stdout);
 					break;
 				case STATE_DROP:
-					color_fg(COLOR_FG_WHITE1);
+					color_fg(colors[0]);
 					fputc(val_get_ascii(value), stdout);
 					break;
 				case STATE_TAIL:
-					color_fg(color);
+					color_fg(colors[val_get_tsize(value)]);
 					fputc(val_get_ascii(value), stdout);
 					break;
 			}
@@ -347,13 +353,16 @@ mat_put_cell_tail(matrix_s *mat, int row, int col, int tsize, int tnext)
 	float intensity = (float) tnext / (float) tsize; // 1 for end of trace, 0.x for beginning
 	int color = ceil(5 * intensity); // TODO hardcoded, bad
 	mat_set_state(mat, row, col, STATE_TAIL);
-//	mat_set_tsize(mat, row, col, tnext); // TODO color index instead!
 	mat_set_tsize(mat, row, col, color);
 }
 
 /*
  * Add a DROP, including its TAIL cells, to the matrix, 
  * starting from the specified position.
+ *
+ * TODO make it so it can also draw partial traces, where
+ *      the drop is past the bottom row, but some of the
+ *      tail cells are still inside the matrix
  */
 static void
 mat_add_drop(matrix_s *mat, int row, int col, int tsize)
@@ -379,9 +388,9 @@ mat_add_drop(matrix_s *mat, int row, int col, int tsize)
  * Make it rain by adding some DROPs to the matrix.
  */
 static void
-mat_rain(matrix_s *mat, float ratio)
+mat_rain(matrix_s *mat)
 {
-	int num = (int) (mat->cols * mat->rows) * ratio;
+	int num = (int) (mat->cols * mat->rows) * mat->drop_ratio;
 
 	int c = 0;
 	int r = 0;
@@ -482,13 +491,13 @@ mat_update(matrix_s *mat)
 }
 
 static void
-mat_fill(matrix_s *mat, uint8_t state)
+mat_fill(matrix_s *mat)
 {
 	for (int r = 0; r < mat->rows; ++r)
 	{
 		for (int c = 0; c < mat->cols; ++c)
 		{
-			mat_set_state(mat, r, c, state);
+			mat_set_state(mat, r, c, STATE_NONE);
 			mat_set_ascii(mat, r, c, rand_ascii());
 		}
 	}
@@ -499,7 +508,7 @@ mat_fill(matrix_s *mat, uint8_t state)
  * Returns -1 on error (out of memory), 0 on success.
  */
 static int
-mat_init(matrix_s *mat, int rows, int cols, float drop_ratio)
+mat_init(matrix_s *mat, uint16_t rows, uint16_t cols, float drop_ratio)
 {
 	mat->data = realloc(mat->data, sizeof(mat->data) * rows * cols);
 	if (mat->data == NULL)
@@ -522,6 +531,15 @@ mat_free(matrix_s *mat)
 	free(mat->data);
 }
 
+int
+cli_wsize(struct winsize *ws)
+{
+#ifdef TIOCGWINSZ
+	return ioctl(STDOUT_FILENO, TIOCGWINSZ, ws);
+#endif
+	return -1;
+}
+
 void
 cli_clear(int rows)
 {
@@ -537,9 +555,12 @@ cli_setup()
 {
 	fprintf(stdout, ANSI_HIDE_CURSOR);
 	fprintf(stdout, ANSI_FONT_BOLD);
+
 	printf("\033[2J"); // clear screen
 	printf("\033[H");  // cursor back to top, left
-	//printf("\n");
+	
+	// set the buffering to fully buffered, we're adult and flush ourselves
+	setvbuf(stdout, NULL, _IOFBF, 0);
 }
 
 void
@@ -547,6 +568,11 @@ cli_reset()
 {
 	fprintf(stdout, ANSI_FONT_RESET);
 	fprintf(stdout, ANSI_SHOW_CURSOR);
+	
+	printf("\033[2J"); // clear screen
+	printf("\033[H");  // cursor back to top, left
+
+	setvbuf(stdout, NULL, _IOLBF, 0);
 }
 
 int
@@ -568,25 +594,24 @@ main(int argc, char **argv)
 	sigaction(SIGTERM,  &sa, NULL);
 	sigaction(SIGWINCH, &sa, NULL);
 
-	// get the terminal dimensions, maybe (this ain't portable)
+	// get the terminal dimensions
 	struct winsize ws = { 0 };
-	ioctl(0, TIOCGWINSZ, &ws);
-
-	// seed the random number generator with the current unix time
-	srand(time(NULL));
+	if (cli_wsize(&ws) == -1)
+	{
+		fprintf(stderr, "Failed to determine terminal window size\n");
+		return EXIT_FAILURE;
+	}
 
 	// this will determine the speed of the entire thing
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-	//struct timespec ts = { .tv_sec = 1, .tv_nsec = 0 };
-
-	// set the buffering to fully buffered, we're adult and flush ourselves
-	setvbuf(stdout, NULL, _IOFBF, 0);
+	
+	// seed the random number generator with the current unix time
+	srand(time(NULL));
 
 	// initialize the matrix
 	matrix_s mat = { 0 }; 
 	mat_init(&mat, ws.ws_row, ws.ws_col, DROP_RATIO);
-	mat_fill(&mat, STATE_NONE);
-	mat_rain(&mat, DROP_RATIO);
+	mat_fill(&mat);
 
 	// prepare the terminal for our shenanigans
 	cli_setup();
@@ -596,21 +621,20 @@ main(int argc, char **argv)
 	{
 		if (resized)
 		{
-			// get the new terminal dimensions
-			ioctl(0, TIOCGWINSZ, &ws);
+			cli_wsize(&ws);
+			
 			// reinitialize the matrix
 			mat_init(&mat, ws.ws_row, ws.ws_col, DROP_RATIO);
-			mat_fill(&mat, STATE_NONE);
-			mat_rain(&mat, DROP_RATIO);
+			mat_fill(&mat);
+			mat_rain(&mat);
 			resized = 0;
 		}
 
+		mat_print(&mat);                // print to the terminal
 		mat_glitch(&mat, GLITCH_RATIO); // apply random defects
 		mat_update(&mat);               // move all drops down one row
-		cli_clear(ws.ws_row);
-		mat_print(&mat);                // print to the terminal
 		//mat_debug(&mat, DEBUG_TSIZE);
-		nanosleep(&ts, NULL);           // zzZzZZzz
+		nanosleep(&ts, NULL);
 	}
 
 	// make sure all is back to normal before we exit
