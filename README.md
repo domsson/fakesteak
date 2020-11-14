@@ -34,14 +34,12 @@ You can just run the included `build` script. After that, you should be able to 
 
 I've compared CPU and RAM usage against that of [`cmatrix`](https://github.com/abishekvashok/cmatrix), [`tmatrix`](https://github.com/M4444/TMatrix) and [`unimatrix`](https://github.com/will8211/unimatrix) a little, all of which offer better portability and more featuers. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all programs in urxvt, with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
 
-|           | CPU   | RAM    | Language | ran as                     |
-|-----------|-------|--------|----------|----------------------------|
-|  charrain |  ~7 % | ~170 K | C        | charrain                   |
-|   cmatrix |  ~7 % | ~900 K | C        | cmatrix -b -u10            |
-|   tmatrix |  ~6 % | ~2.5 M | C++      | tmatrix                    |
-| unimatrix | ~11 % | ~9.4 M | Python   | unimatrix -b -s=90 -l=o -f |
+|                      | CPU   | RAM    | disk | Language | ran as                     |
+|----------------------|-------|--------|------|----------|----------------------------|
+|  charrain v0.2.0     |  ~6 % | ~170 K | 19 K | C        | charrain -d33              |
+|   cmatrix v2.0       |  ~7 % | ~900 K | 22 K | C        | cmatrix -b -u10            |
+|   tmatrix v1.3       |  ~8 % | ~2.1 M | 87 K | C++      | tmatrix --gap=30,70        |
+| unimatrix 2018/01/09 | ~11 % | ~9.4 M | 26 K | Python   | unimatrix -b -s=90 -l=o -f |
 
-It looks like `tmatrix` is the most efficient regarding CPU time, but also uses the most amount of memory amongst the C/C++ implementations. `cmatrix` and `charrain` seem to perform very similar in the CPU department, but `charrain` only uses a fraction of the memory. As expected, `unimatrix` uses the most CPU time and memory.
-
-Note, however, `charrain`s shortcomings in features and portability compared to the other three.
+Again, when comparing these numbers, note `charrain`s shortcomings in features and portability compared to the other implementations.
 

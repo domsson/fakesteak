@@ -1,6 +1,7 @@
 #include <stdio.h>      // fprintf(), stdout, setlinebuf()
 #include <stdlib.h>     // EXIT_SUCCESS, EXIT_FAILURE, rand()
-#include <stdint.h>     // uint8_t, uint16_t
+#include <stdint.h>     // uint8_t, uint16_t, ...
+#include <inttypes.h>   // PRIu8, PRIu16, ...
 #include <unistd.h>     // getopt(), STDOUT_FILENO
 #include <math.h>       // ceil()
 #include <time.h>       // time(), nanosleep(), struct timespec
@@ -14,8 +15,8 @@
 #define PROGRAM_URL  "https://github.com/domsson/charrain"
 
 #define PROGRAM_VER_MAJOR 0
-#define PROGRAM_VER_MINOR 1
-#define PROGRAM_VER_PATCH 2
+#define PROGRAM_VER_MINOR 2
+#define PROGRAM_VER_PATCH 0
 
 // colors, adjust to your liking
 // https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
@@ -30,17 +31,20 @@
 
 // these can be tweaked if need be
 
-#define ERROR_FACTOR_MIN 0.01
-#define ERROR_FACTOR_MAX 0.10
-#define ERROR_FACTOR_DEF 0.02
+#define ERROR_BASE_VALUE 0.01
+#define ERROR_FACTOR_MIN 1
+#define ERROR_FACTOR_MAX 100
+#define ERROR_FACTOR_DEF 2
 
-#define DROPS_FACTOR_MIN 0.01
-#define DROPS_FACTOR_MAX 0.10
-#define DROPS_FACTOR_DEF 0.0001
+#define DROPS_BASE_VALUE 0.001
+#define DROPS_FACTOR_MIN 1
+#define DROPS_FACTOR_MAX 100
+#define DROPS_FACTOR_DEF 1
 
-#define SPEED_FACTOR_MIN 0.01
-#define SPEED_FACTOR_MAX 1.00
-#define SPEED_FACTOR_DEF 0.10
+#define SPEED_BASE_VALUE 1.00 
+#define SPEED_FACTOR_MIN 1
+#define SPEED_FACTOR_MAX 100
+#define SPEED_FACTOR_DEF 10
 
 // do not change these 
 
@@ -71,6 +75,8 @@
 
 #define ASCII_MIN 32
 #define ASCII_MAX 126
+
+#define NS_PER_SEC 1000000000
 
 // for easy access of colors later on
 
@@ -120,9 +126,9 @@ matrix_s;
 
 typedef struct options
 {
-	float   speed;         // speed factor
-	float   drops;         // drops ratio / factor
-	float   error;         // error ratio / factor
+	uint8_t speed;         // speed factor
+	uint8_t drops;         // drops ratio / factor
+	uint8_t error;         // error ratio / factor
 	time_t  rand;          // seed for rand()
 	uint8_t bg : 1;        // set black background color
 	uint8_t help : 1;      // show help and exit
@@ -143,10 +149,10 @@ parse_args(int argc, char **argv, options_s *opts)
 				opts->bg = 1;
 				break;
 			case 'd':
-				opts->drops = atof(optarg);
+				opts->drops = atoi(optarg);
 				break;
 			case 'e':
-				opts->error = atof(optarg);
+				opts->error = atoi(optarg);
 				break;
 			case 'h':
 				opts->help = 1;
@@ -155,7 +161,7 @@ parse_args(int argc, char **argv, options_s *opts)
 				opts->rand = atol(optarg);
 				break;
 			case 's':
-				opts->speed = atof(optarg);
+				opts->speed = atoi(optarg);
 				break;
 			case 'V':
 				opts->version = 1;
@@ -170,12 +176,15 @@ help(const char *invocation, FILE *where)
 	fprintf(where, "USAGE\n");
 	fprintf(where, "\t%s [OPTIONS...]\n\n", invocation);
 	fprintf(where, "OPTIONS\n");
-	fprintf(where, "\t-b\tset background color (0 - 255)\n");
-	fprintf(where, "\t-d\tdrops ratio (default is %1.2f)\n", DROPS_FACTOR_DEF);
-	fprintf(where, "\t-e\terror ratio (default is %1.2f)\n", ERROR_FACTOR_DEF);
+	fprintf(where, "\t-b\tuse black background color\n");
+	fprintf(where, "\t-d\tdrops ratio (%"PRIu8".. %"PRIu8", default: %"PRIu8")\n",
+		       	DROPS_FACTOR_MIN, DROPS_FACTOR_MAX, DROPS_FACTOR_DEF);
+	fprintf(where, "\t-e\terror ratio (%"PRIu8" .. %"PRIu8", default: %"PRIu8")\n", 
+			ERROR_FACTOR_MIN, ERROR_FACTOR_MAX, ERROR_FACTOR_DEF);
 	fprintf(where, "\t-h\tprint this help text and exit\n");
 	fprintf(where, "\t-r\tseed for the random number generator\n");
-	fprintf(where, "\t-s\tspeed factor (default is %1.2f)\n", SPEED_FACTOR_DEF);
+	fprintf(where, "\t-s\tspeed factor (%"PRIu8" .. %"PRIu8", default: %"PRIu8")\n", 
+			SPEED_FACTOR_MIN, SPEED_FACTOR_MAX, SPEED_FACTOR_DEF);
 	fprintf(where, "\t-V\tprint version information and exit\n");
 }
 
@@ -204,8 +213,8 @@ on_signal(int sig)
 	handled = sig;
 }
 
-static void 
-cap_float(float *val, float min, float max)
+static void
+cap_uint8(uint8_t *val, uint8_t min, uint8_t max)
 {
 	if (*val < min) { *val = min; return; }
 	if (*val > max) { *val = max; return; }
@@ -215,12 +224,6 @@ static int
 rand_int(int min, int max)
 {
 	return min + rand() % ((max + 1) - min);
-}
-
-static float
-rand_float()
-{
-	return (float) rand() / (float) RAND_MAX;
 }
 
 static int
@@ -403,13 +406,13 @@ mat_debug(matrix_s *mat, int what)
 		switch (what)
 		{
 			case DEBUG_STATE:
-				fprintf(stdout, "%hhu", val_get_state(value));
+				fprintf(stdout, "%"PRIu8, val_get_state(value));
 				break;
 			case DEBUG_ASCII:
 				fprintf(stdout, "%c",   val_get_ascii(value));
 				break;
 			case DEBUG_TSIZE:
-				fprintf(stdout, "%hhu", val_get_tsize(value));
+				fprintf(stdout, "%"PRIu8, val_get_tsize(value));
 				break;
 		}
 	}
@@ -705,17 +708,17 @@ main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	if (opts.speed == 0.0)
+	if (opts.speed == 0)
 	{
 		opts.speed = SPEED_FACTOR_DEF;
 	}
 
-	if (opts.drops == 0.0)
+	if (opts.drops == 0)
 	{
 		opts.drops = DROPS_FACTOR_DEF;
 	}
 
-	if (opts.error == 0.0)
+	if (opts.error == 0)
 	{
 		opts.error = ERROR_FACTOR_DEF;
 	}
@@ -724,10 +727,10 @@ main(int argc, char **argv)
 	{
 		opts.rand = time(NULL);
 	}
-
-	cap_float(&opts.speed, SPEED_FACTOR_MIN, SPEED_FACTOR_MAX);
-	cap_float(&opts.drops, DROPS_FACTOR_MIN, DROPS_FACTOR_MAX);
-	cap_float(&opts.error, ERROR_FACTOR_MIN, ERROR_FACTOR_MAX);
+	
+	cap_uint8(&opts.speed, SPEED_FACTOR_MIN, SPEED_FACTOR_MAX);
+	cap_uint8(&opts.drops, DROPS_FACTOR_MIN, DROPS_FACTOR_MAX);
+	cap_uint8(&opts.error, ERROR_FACTOR_MIN, ERROR_FACTOR_MAX);
 
 	// get the terminal dimensions
 	struct winsize ws = { 0 };
@@ -739,20 +742,26 @@ main(int argc, char **argv)
 
 	if (ws.ws_col == 0 || ws.ws_row == 0)
 	{
-		fprintf(stderr, "Terminal size not appropriate)\n");
+		fprintf(stderr, "Terminal size not appropriate\n");
 		return EXIT_FAILURE;
 	}
 
-	// this will determine the speed of the entire thing
-	int less = 90000000 * opts.speed;
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 - less };
+	// calculate some spicy values from the options
+	float wait = SPEED_BASE_VALUE / (float) opts.speed;
+	float drops_ratio = DROPS_BASE_VALUE * opts.drops;
+	float error_ratio = ERROR_BASE_VALUE * opts.error;
+
+	// set up the nanosleep struct
+	uint8_t  seconds     = (int) wait;
+	uint32_t nanoseconds = (wait - seconds) * NS_PER_SEC;
+	struct timespec ts = { .tv_sec = seconds, .tv_nsec = nanoseconds };
 	
 	// seed the random number generator with the current unix time
 	srand(opts.rand);
 
 	// initialize the matrix
 	matrix_s mat = { 0 }; 
-	mat_init(&mat, ws.ws_row, ws.ws_col, opts.drops);
+	mat_init(&mat, ws.ws_row, ws.ws_col, drops_ratio);
 	mat_fill(&mat);
 
 	// prepare the terminal for our shenanigans
@@ -763,18 +772,19 @@ main(int argc, char **argv)
 	{
 		if (resized)
 		{
+			// query the terminal size again
 			cli_wsize(&ws);
 			
 			// reinitialize the matrix
-			mat_init(&mat, ws.ws_row, ws.ws_col, opts.drops);
+			mat_init(&mat, ws.ws_row, ws.ws_col, drops_ratio);
 			mat_fill(&mat);
-			mat_rain(&mat);
+			mat_rain(&mat); // TODO maybe this isn't desired?
 			resized = 0;
 		}
 
 		cli_clear(mat.rows);
 		mat_print(&mat);                // print to the terminal
-		mat_glitch(&mat, opts.error);   // apply random defects
+		mat_glitch(&mat, error_ratio);  // apply random defects
 		mat_update(&mat);               // move all drops down one row
 		//mat_debug(&mat, DEBUG_TSIZE);
 		nanosleep(&ts, NULL);
