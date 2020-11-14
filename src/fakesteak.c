@@ -96,7 +96,6 @@ static char *colors[] =
 
 static volatile int resized;   // window resize event received
 static volatile int running;   // controls running of the main loop 
-static volatile int handled;   // last signal that has been handled 
 
 //
 //  the matrix' data represents a 2D array of size cols * rows.
@@ -222,7 +221,6 @@ on_signal(int sig)
 			running = 0;
 			break;
 	}
-	handled = sig;
 }
 
 /*
