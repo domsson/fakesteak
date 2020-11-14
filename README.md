@@ -58,13 +58,13 @@ the number of glitches in the matrix (randomly changing characters).
 
 I've compared CPU and RAM usage against that of some other popular matrix rain implementations a little. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all programs in urxvt, with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
 
-|                      | CPU      | RAM    | disk  | Language | ran as                     |
-|----------------------|----------|--------|-------|----------|----------------------------|
-| fakesteak v0.2.0     |     ~6 % | ~170 K |  19 K | C        | fakesteak -d33             |
-|   cmatrix v2.0       |     ~7 % | ~900 K |  22 K | C        | cmatrix -b -u10            |
-|   tmatrix v1.3       |     ~8 % | ~2.1 M |  87 K | C++      | tmatrix --gap=30,70        |
-| unimatrix 2018/01/09 |    ~11 % | ~9.4 M |  26 K | Python   | unimatrix -b -s=90 -l=o -f |
-| cxxmatrix 2020/09/27 | ~20-55 % | ~4.5 M | 124 K | C++      | cxxmatrix -s 'rain-forver' |
+|                      | CPU      | RAM    | disk  | Language | ran as                      |
+|----------------------|----------|--------|-------|----------|-----------------------------|
+| fakesteak v0.2.0     |     ~6 % | ~170 K |  19 K | C        | fakesteak -d33              |
+|   cmatrix v2.0       |     ~7 % | ~900 K |  22 K | C        | cmatrix -b -u10             |
+|   tmatrix v1.3       |     ~8 % | ~2.1 M |  87 K | C++      | tmatrix --gap=30,70         |
+| unimatrix 2018/01/09 |    ~11 % | ~9.4 M |  26 K | Python   | unimatrix -b -s=90 -l=o -f  |
+| cxxmatrix 2020/09/27 | ~20-55 % | ~4.5 M | 124 K | C++      | cxxmatrix -s 'rain-forever' |
 
 Note, however, that some of these other projects offer more features and/or portability.
 
