@@ -2,19 +2,22 @@
 
 ![fakesteak](example2.png)
 
-This is my personal implementation of a green character rain screen as seen in "The Matrix". 
+My personal implementation of a digital character rain screen as seen in "The Matrix". 
 
-## Objectives
+## Overview 
 
-- Use as few resources (memory, CPU) as possible
-- Use as few dependencies as possible (no ncurses)
-- Get as close to the original as possible, minus Japanese characters
-- Assumptions over options, at least for the time being
-- Compatibility and portability can be sacrificied
+The focus of this project is on low CPU and memory footprint, with the secondary 
+objective being to recreate the original effect, as seen in the movie, as closely 
+as possible. For simplicities sake, however, there will be no Japanese characters. 
 
-## State
+`fakesteak` has no external dependencies (it works without ncurses), but instead 
+uses some non portable code instead. There aren't too many options available, but 
+by tweaking some of the `#defines` at the top of the file, customization is quite 
+easily possible.
 
-Everything seems to be working well on Linux, using urxvt, xterm, lxterm or uxterm. Other OS and terminals have not yet been tested.
+I've written this on and for Linux. Everything seems to be working well using 
+urxvt, xterm, lxterm or uxterm. Other OS and terminals have not yet been tested. 
+Your feedback is welcome, but I don't plan on adding support for Windows/Mac OS. 
 
 ## Dependencies / Requirements
 
@@ -29,6 +32,23 @@ You can just run the included `build` script. After that, you should be able to 
     ./build
     chmod +x ./bin/fakesteak
     ./bin/fakesteak
+
+## Usage
+
+    fakesteak [OPTIONS...]
+
+Options:
+
+  - `-b`: use black background color
+  - `-d`: drops ratio ([1..100], default is 1)
+  - `-e`: error ratio ([1..100], default is 2)
+  - `-h`: print help text and exit
+  - `-r`: seed for the random number generator
+  - `-s`: speed factor ([1..100], default is 10)
+  - `-V`: print version information and exit
+
+The drops ratio determines the number of rain drops, as a percentage of the entire screen, 
+while the error ratio influences the number of characters that will randomly change into other characters. 
 
 ## Performance
 
