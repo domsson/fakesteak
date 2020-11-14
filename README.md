@@ -1,6 +1,6 @@
-# charrain
+# fakesteak 
 
-![charrain](example2.png)
+![fakesteak](example2.png)
 
 This is my personal implementation of a green character rain screen as seen in "The Matrix". 
 
@@ -27,8 +27,8 @@ You can just run the included `build` script. After that, you should be able to 
 
     chmod +x ./build
     ./build
-    chmod +x ./bin/charrain
-    ./bin/charrain
+    chmod +x ./bin/fakesteak
+    ./bin/fakesteak
 
 ## Performance
 
@@ -36,10 +36,10 @@ I've compared CPU and RAM usage against that of [`cmatrix`](https://github.com/a
 
 |                      | CPU   | RAM    | disk | Language | ran as                     |
 |----------------------|-------|--------|------|----------|----------------------------|
-|  charrain v0.2.0     |  ~6 % | ~170 K | 19 K | C        | charrain -d33              |
+| fakesteak v0.2.0     |  ~6 % | ~170 K | 19 K | C        | fakesteak -d33             |
 |   cmatrix v2.0       |  ~7 % | ~900 K | 22 K | C        | cmatrix -b -u10            |
 |   tmatrix v1.3       |  ~8 % | ~2.1 M | 87 K | C++      | tmatrix --gap=30,70        |
 | unimatrix 2018/01/09 | ~11 % | ~9.4 M | 26 K | Python   | unimatrix -b -s=90 -l=o -f |
 
-Again, when comparing these numbers, note `charrain`s shortcomings in features and portability compared to the other implementations.
+Again, when comparing these numbers, note `fakesteak`s shortcomings in features and portability compared to the other implementations.
 
