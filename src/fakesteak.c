@@ -85,8 +85,8 @@ static char *colors[] =
 	COLOR_FG_0,
 	COLOR_FG_1,
 	COLOR_FG_2,
-       	COLOR_FG_3,
-       	COLOR_FG_4, 
+	COLOR_FG_3,
+	COLOR_FG_4, 
 	COLOR_FG_5
 };
 
@@ -136,6 +136,9 @@ typedef struct options
 }
 options_s;
 
+/*
+ * Parse command line args into the provided options_s struct.
+ */
 static void
 parse_args(int argc, char **argv, options_s *opts)
 {
@@ -170,6 +173,9 @@ parse_args(int argc, char **argv, options_s *opts)
 	}
 }
 
+/*
+ * Print usage information.
+ */
 static void
 help(const char *invocation, FILE *where)
 {
@@ -188,6 +194,9 @@ help(const char *invocation, FILE *where)
 	fprintf(where, "\t-V\tprint version information and exit\n");
 }
 
+/*
+ * Print version information.
+ */
 static void
 version(FILE *where)
 {
