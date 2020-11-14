@@ -56,7 +56,7 @@ the number of glitches in the matrix (randomly changing characters).
 
 ## Performance
 
-I've compared CPU and RAM usage against that of [`cmatrix`](https://github.com/abishekvashok/cmatrix), [`tmatrix`](https://github.com/M4444/TMatrix) and [`unimatrix`](https://github.com/will8211/unimatrix) a little, all of which offer better portability and more features. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all programs in urxvt, with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
+I've compared CPU and RAM usage against that of some other popular matrix rain implementations a little. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all programs in urxvt, with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
 
 |                      | CPU      | RAM    | disk  | Language | ran as                     |
 |----------------------|----------|--------|-------|----------|----------------------------|
@@ -66,7 +66,7 @@ I've compared CPU and RAM usage against that of [`cmatrix`](https://github.com/a
 | unimatrix 2018/01/09 |    ~11 % | ~9.4 M |  26 K | Python   | unimatrix -b -s=90 -l=o -f |
 | cxxmatrix 2020/09/27 | ~20-55 % | ~4.5 M | 124 K | C++      | cxxmatrix -s 'rain-forver' |
 
-Again, when comparing these numbers, note `fakesteak`s shortcomings in features and portability compared to the other implementations.
+Note, however, that some of these other projects offer more features and/or portability.
 
 ## Support
 
