@@ -15,7 +15,32 @@
 
 #define PROGRAM_VER_MAJOR 0
 #define PROGRAM_VER_MINOR 1
-#define PROGRAM_VER_PATCH 0
+#define PROGRAM_VER_PATCH 2
+
+// colors, adjust to your liking
+// https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
+
+#define COLOR_BG   "\x1b[48;5;0m"   // background color, if to be used
+#define COLOR_FG_0 "\x1b[38;5;231m" // color for the drop
+#define COLOR_FG_1 "\x1b[38;5;48m"  // color for first tail cell
+#define COLOR_FG_2 "\x1b[38;5;41m"  // ...
+#define COLOR_FG_3 "\x1b[38;5;35m"  // ...
+#define COLOR_FG_4 "\x1b[38;5;29m"  // ...
+#define COLOR_FG_5 "\x1b[38;5;238m" // color for the last tail cell
+
+// these can be tweaked if need be
+
+#define ERROR_FACTOR_MIN 0.01
+#define ERROR_FACTOR_MAX 0.10
+#define ERROR_FACTOR_DEF 0.02
+
+#define DROPS_FACTOR_MIN 0.01
+#define DROPS_FACTOR_MAX 0.10
+#define DROPS_FACTOR_DEF 0.0001
+
+#define SPEED_FACTOR_MIN 0.01
+#define SPEED_FACTOR_MAX 1.00
+#define SPEED_FACTOR_DEF 0.10
 
 // do not change these 
 
@@ -47,37 +72,7 @@
 #define ASCII_MIN 32
 #define ASCII_MAX 126
 
-// these can be tweaked if need be
-
-#define ERROR_FACTOR_MIN 0.01
-#define ERROR_FACTOR_MAX 0.10
-#define ERROR_FACTOR_DEF 0.02
-
-#define DROPS_FACTOR_MIN 0.01
-#define DROPS_FACTOR_MAX 0.10
-#define DROPS_FACTOR_DEF 0.0001
-
-#define SPEED_FACTOR_MIN 0.01
-#define SPEED_FACTOR_MAX 1.00
-#define SPEED_FACTOR_DEF 0.10
-
-// rain colors (8 bit codes), adjust to your liking
-//
-// index 0 is the color for the drop, the remaining colors
-// will be used for the tail, starting from index 1 for the 
-// cell closest to the drop and the last color being used 
-// for the cell furthest from the drop
-//
-// https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
-
-#define COLOR_BG   "\x1b[48;5;0m"
-
-#define COLOR_FG_0 "\x1b[38;5;231m"
-#define COLOR_FG_1 "\x1b[38;5;48m"
-#define COLOR_FG_2 "\x1b[38;5;41m"
-#define COLOR_FG_3 "\x1b[38;5;35m"
-#define COLOR_FG_4 "\x1b[38;5;29m"
-#define COLOR_FG_5 "\x1b[38;5;238m"
+// for easy access of colors later on
 
 static char *colors[] =
 {
@@ -364,13 +359,14 @@ mat_print(matrix_s *mat)
 {
 	uint16_t value = 0;
 	uint8_t  state = STATE_NONE;
-
-	size_t size = mat->cols * mat->rows;
+	size_t   size  = mat->cols * mat->rows;
 
 	for (int i = 0; i < size; ++i)
 	{
 		value = mat->data[i];
 		state = val_get_state(value);
+
+		// fputc() + fputs() is faster than one call to printf()
 
 		switch (state)
 		{
@@ -395,15 +391,15 @@ mat_print(matrix_s *mat)
 static void
 mat_debug(matrix_s *mat, int what)
 {
-	fprintf(stdout, "\x1b[0m");
+	fputs(ANSI_FONT_RESET, stdout);
 
 	uint16_t value = 0;
-
-	size_t size = mat->cols * mat->rows;
+	size_t   size  = mat->cols * mat->rows;
 
 	for (int i = 0; i < size; ++i)
 	{
 		value = mat->data[i];
+
 		switch (what)
 		{
 			case DEBUG_STATE:
@@ -417,6 +413,7 @@ mat_debug(matrix_s *mat, int what)
 				break;
 		}
 	}
+
 	fflush(stdout);
 }
 
@@ -461,7 +458,7 @@ mat_add_drop(matrix_s *mat, int row, int col, int tsize)
 		if (i == 0)
 		{
 			mat_put_cell_drop(mat, row, col, tsize);
-			++mat->drop_count;
+			mat->drop_count += 1;
 		}
 		else
 		{
@@ -554,25 +551,26 @@ mat_mov_col(matrix_s *mat, int col)
 static void 
 mat_update(matrix_s *mat)
 {
-	// add new drops at the top, trying to get to the desired drop count
-
-	size_t drops_desired = (mat->cols * mat->rows) * mat->drop_ratio;
-	size_t drops_missing = drops_desired - mat->drop_count; 
-	size_t drops_to_add  = (size_t) ((float) drops_missing / (float) mat->rows);
-
-	int col = 0;
-
-	for (size_t i = 0; i <= drops_to_add; ++i)
-	{
-		col = rand_int(0, mat->cols - 1);
-		
-		mat_add_drop(mat, 0, col, rand_int(TSIZE_MIN, TSIZE_MAX));
-	}
-
 	// move each column down one cell, possibly dropping some drops
 	for (int col = 0; col < mat->cols; ++col)
 	{
 		mat->drop_count -= mat_mov_col(mat, col);
+	}
+	
+	// add new drops at the top, trying to get to the desired drop count
+	int drops_desired = (mat->cols * mat->rows) * mat->drop_ratio;
+	int drops_missing = drops_desired - mat->drop_count; 
+	int drops_to_add  = ceil(drops_missing / (float) mat->rows);
+
+	//fprintf(stderr, "drop count:    %lu\n", mat->drop_count);
+	//fprintf(stderr, "drops desired: %d\n", drops_desired);
+	//fprintf(stderr, "drops missing: %d\n", drops_missing);
+	//fprintf(stderr, "drops to add:  %d\n", drops_to_add);
+
+	for (int i = 0; i <= drops_to_add; ++i)
+	{
+		mat_add_drop(mat, 0, rand_int(0, mat->cols - 1), 
+				rand_int(TSIZE_MIN, TSIZE_MAX));
 	}
 }
 
@@ -635,6 +633,7 @@ cli_clear(int rows)
 	//printf("\033[%dT", rows); // scroll down
 	//printf("\033[%dN", rows); // scroll up
 
+	//fputs(ANSI_CLEAR_SCREEN, stdout); // just for debug, remove otherwise
 	fputs(ANSI_CURSOR_RESET, stdout);
 }
 
@@ -667,7 +666,6 @@ cli_reset()
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 }
-
 
 /*
  * Some good resources that have helped me with this project:
@@ -739,6 +737,12 @@ main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	if (ws.ws_col == 0 || ws.ws_row == 0)
+	{
+		fprintf(stderr, "Terminal size not appropriate)\n");
+		return EXIT_FAILURE;
+	}
+
 	// this will determine the speed of the entire thing
 	int less = 90000000 * opts.speed;
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 - less };
@@ -753,7 +757,6 @@ main(int argc, char **argv)
 
 	// prepare the terminal for our shenanigans
 	cli_setup(&opts);
-
 
 	running = 1;
 	while(running)
