@@ -10,7 +10,7 @@ The focus of this project is on low CPU and memory footprint, with the secondary
 objective being to recreate the original effect, as seen in the movie, as closely 
 as possible. For simplicities sake, however, there will be no Japanese characters. 
 
-`fakesteak` has no external dependencies (it works without ncurses), but uses  
+`fakesteak` has no external dependencies (it works without ncurses), but uses 
 some non portable code instead. There are some command line options available, 
 and by tweaking some of the `#defines` at the top of the file, further 
 customization - for example of the colors - is easily possible.
