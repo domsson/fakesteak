@@ -128,7 +128,7 @@ typedef struct options
 	uint8_t speed;         // speed factor
 	uint8_t drops;         // drops ratio / factor
 	uint8_t error;         // error ratio / factor
-	time_t  rand;          // seed for rand()
+	time_t  rands;         // seed for rand()
 	uint8_t bg : 1;        // set black background color
 	uint8_t help : 1;      // show help and exit
 	uint8_t version : 1;   // show version and exit
@@ -160,7 +160,7 @@ parse_args(int argc, char **argv, options_s *opts)
 				opts->help = 1;
 				break;
 			case 'r':
-				opts->rand = atol(optarg);
+				opts->rands = atol(optarg);
 				break;
 			case 's':
 				opts->speed = atoi(optarg);
@@ -827,9 +827,9 @@ main(int argc, char **argv)
 		opts.error = ERROR_FACTOR_DEF;
 	}
 
-	if (opts.rand == 0)
+	if (opts.rands == 0)
 	{
-		opts.rand = time(NULL);
+		opts.rands = time(NULL);
 	}
 	
 	// make sure the values are within expected/valid range
@@ -862,7 +862,7 @@ main(int argc, char **argv)
 	struct timespec ts = { .tv_sec = seconds, .tv_nsec = nanoseconds };
 	
 	// seed the random number generator with the current unix time
-	srand(opts.rand);
+	srand(opts.rands);
 
 	// initialize the matrix
 	matrix_s mat = { 0 }; 
