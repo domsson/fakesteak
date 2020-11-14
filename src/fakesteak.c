@@ -16,7 +16,7 @@
 
 #define PROGRAM_VER_MAJOR 0
 #define PROGRAM_VER_MINOR 2
-#define PROGRAM_VER_PATCH 0
+#define PROGRAM_VER_PATCH 2
 
 // colors, adjust to your liking
 // https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
@@ -39,7 +39,7 @@
 #define DROPS_BASE_VALUE 0.001
 #define DROPS_FACTOR_MIN 1
 #define DROPS_FACTOR_MAX 100
-#define DROPS_FACTOR_DEF 1
+#define DROPS_FACTOR_DEF 10
 
 #define SPEED_BASE_VALUE 1.00 
 #define SPEED_FACTOR_MIN 1
@@ -177,7 +177,7 @@ help(const char *invocation, FILE *where)
 	fprintf(where, "\t%s [OPTIONS...]\n\n", invocation);
 	fprintf(where, "OPTIONS\n");
 	fprintf(where, "\t-b\tuse black background color\n");
-	fprintf(where, "\t-d\tdrops ratio (%"PRIu8".. %"PRIu8", default: %"PRIu8")\n",
+	fprintf(where, "\t-d\tdrops ratio (%"PRIu8" .. %"PRIu8", default: %"PRIu8")\n",
 		       	DROPS_FACTOR_MIN, DROPS_FACTOR_MAX, DROPS_FACTOR_DEF);
 	fprintf(where, "\t-e\terror ratio (%"PRIu8" .. %"PRIu8", default: %"PRIu8")\n", 
 			ERROR_FACTOR_MIN, ERROR_FACTOR_MAX, ERROR_FACTOR_DEF);

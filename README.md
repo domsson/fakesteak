@@ -40,15 +40,15 @@ You can just run the included `build` script. After that, you should be able to 
 Options:
 
   - `-b`: use black background color
-  - `-d`: drops ratio ([1..100], default is 1)
+  - `-d`: drops ratio ([1..100], default is 10)
   - `-e`: error ratio ([1..100], default is 2)
   - `-h`: print help text and exit
   - `-r`: seed for the random number generator
   - `-s`: speed factor ([1..100], default is 10)
   - `-V`: print version information and exit
 
-The drops ratio determines the number of rain drops, as a percentage of the entire screen, 
-while the error ratio influences the number of characters that will randomly change into other characters. 
+The drops ratio determines the density of the matrix, while the error ratio influences
+the number of glitches in the matrix (randomly changing characters). 
 
 ## Performance
 
