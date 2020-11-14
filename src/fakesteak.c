@@ -205,6 +205,9 @@ version(FILE *where)
 			PROGRAM_URL);
 }
 
+/*
+ * Signal handler.
+ */
 static void
 on_signal(int sig)
 {
@@ -222,6 +225,9 @@ on_signal(int sig)
 	handled = sig;
 }
 
+/*
+ * Make sure `val` is within the range [min, max].
+ */
 static void
 cap_uint8(uint8_t *val, uint8_t min, uint8_t max)
 {
@@ -229,12 +235,19 @@ cap_uint8(uint8_t *val, uint8_t min, uint8_t max)
 	if (*val > max) { *val = max; return; }
 }
 
+/*
+ * Return a pseudo-random int in the range [min, max].
+ */
 static int
 rand_int(int min, int max)
 {
 	return min + rand() % ((max + 1) - min);
 }
 
+/*
+ * Return a psuedo-random int in the range [min, max], where any value smaller 
+ * than min will be turned to min, hence giving a bias towards that number.
+ */
 static int
 rand_int_mincap(int min, int max)
 {
@@ -242,6 +255,10 @@ rand_int_mincap(int min, int max)
 	return r < min ? min : r;
 }
 
+/*
+ * Return a pseudo-random ASCII character, where there is a somewhat 
+ * greater chance of getting a space than any other char.
+ */
 static uint8_t 
 rand_ascii()
 {
@@ -252,24 +269,37 @@ rand_ascii()
 // Functions to manipulate individual matrix cell values
 //
 
+/*
+ * Create a 16 bit matrix value from the given 8 bit values representing 
+ * a ASCII char, the cell state and the tail size (or color index).
+ */
 static uint16_t
 val_new(uint8_t ascii, uint8_t state, uint8_t tsize)
 {
 	return (BITMASK_TSIZE & (tsize << 10)) | (BITMASK_STATE & (state << 8)) | ascii;
 }
 
+/*
+ * Extract the 8 bit ASCII char from the given 16 bit matrix value.
+ */
 static uint8_t
 val_get_ascii(uint16_t value)
 {
 	return value & BITMASK_ASCII;
 }
 
+/*
+ * Extract the 2 bit cell state from the given 16 bit matrix value.
+ */
 static uint8_t
 val_get_state(uint16_t value)
 {
 	return (value & BITMASK_STATE) >> 8;
 }
 
+/*
+ * Extract the 6 bit tail size/ color index from the given 16 bit matrix value.
+ */
 static uint8_t
 val_get_tsize(uint16_t value)
 {
@@ -280,12 +310,18 @@ val_get_tsize(uint16_t value)
 // Functions to access / set matrix values
 //
 
+/*
+ * Get the matrix array index for the given row and column.
+ */
 static int
 mat_idx(matrix_s *mat, int row, int col)
 {
 	return row * mat->cols + col;
 }
 
+/*
+ * Get the 16 bit matrix value from the cell at the given row and column.
+ */
 static uint16_t
 mat_get_value(matrix_s *mat, int row, int col)
 {
@@ -294,24 +330,36 @@ mat_get_value(matrix_s *mat, int row, int col)
 	return mat->data[mat_idx(mat, row, col)];
 }
 
+/*
+ * Get the 8 bit ASCII char from the cell at the given row and column.
+ */
 static uint8_t
 mat_get_ascii(matrix_s *mat, int row, int col)
 {
 	return val_get_ascii(mat_get_value(mat, row, col));
 }
 
+/*
+ * Get the 2 bit cell state from the cell at the given row and column.
+ */
 static uint8_t
 mat_get_state(matrix_s *mat, int row, int col)
 {
 	return val_get_state(mat_get_value(mat, row, col));
 }
 
+/*
+ * Get the 6 bit tail size from the cell at the given row and column.
+ */
 static uint8_t
 mat_get_tsize(matrix_s *mat, int row, int col)
 {
 	return val_get_tsize(mat_get_value(mat, row, col));
 }
 
+/*
+ * Set the 16 bit matrix value for the cell at the given row and column.
+ */
 static uint8_t
 mat_set_value(matrix_s *mat, int row, int col, uint16_t value)
 {
@@ -320,6 +368,9 @@ mat_set_value(matrix_s *mat, int row, int col, uint16_t value)
 	return mat->data[mat_idx(mat, row, col)] = value;
 }
 
+/*
+ * Set the 8 bit ASCII char for the cell at the given row and column.
+ */
 static uint8_t
 mat_set_ascii(matrix_s *mat, int row, int col, uint8_t ascii)
 {
@@ -328,6 +379,9 @@ mat_set_ascii(matrix_s *mat, int row, int col, uint8_t ascii)
 			val_new(ascii, val_get_state(value), val_get_tsize(value)));
 }
 
+/*
+ * Set the 2 bit cell state for the cell at the given row and column.
+ */
 static uint8_t
 mat_set_state(matrix_s *mat, int row, int col, uint8_t state)
 {
@@ -337,6 +391,9 @@ mat_set_state(matrix_s *mat, int row, int col, uint8_t state)
 			val_new(val_get_ascii(value), state, tsize));
 }
 
+/*
+ * Set the 6 bit tail size for the cell at the given row and column.
+ */
 static uint8_t
 mat_set_tsize(matrix_s *mat, int row, int col, uint8_t tsize)
 {
@@ -349,6 +406,9 @@ mat_set_tsize(matrix_s *mat, int row, int col, uint8_t tsize)
 // Functions to create, manipulate and print a matrix
 //
 
+/*
+ * Randomly change some characters in the matrix.
+ */
 static void
 mat_glitch(matrix_s *mat, float fraction)
 {
@@ -366,6 +426,9 @@ mat_glitch(matrix_s *mat, float fraction)
 	}
 }
 
+/*
+ * Print the matrix to stdout.
+ */
 static void
 mat_print(matrix_s *mat)
 {
@@ -396,10 +459,12 @@ mat_print(matrix_s *mat)
 		}
 	}
 
-	// Depending on what type of buffering we use, flushing might be needed
 	fflush(stdout);
 }
 
+/*
+ * Print debug info for the matrix to stdout.
+ */
 static void
 mat_debug(matrix_s *mat, int what)
 {
@@ -480,7 +545,13 @@ mat_add_drop(matrix_s *mat, int row, int col, int tsize)
 }
 
 /*
- * Make it rain by adding some DROPs to the matrix.
+ * Make it rain by randomly adding DROPs to the matrix, based on the 
+ * drop_ratio of the given matrix.
+ *
+ * TODO a nicer implementation would be to base the number of drops 
+ *      to add on the drop_count field; however, we then also need to
+ *      make sure that we reset this field to 0 on matrix resize and 
+ *      before calling this function.
  */
 static void
 mat_rain(matrix_s *mat)
@@ -560,6 +631,10 @@ mat_mov_col(matrix_s *mat, int col)
 	return dropped;
 }
 
+/*
+ * Update the matrix by moving all drops down one cell and potentially 
+ * adding new drops at the top of the matrix.
+ */
 static void 
 mat_update(matrix_s *mat)
 {
@@ -586,6 +661,10 @@ mat_update(matrix_s *mat)
 	}
 }
 
+/*
+ * Fill the entire matrix with random characters, setting all cells to state
+ * STATE_NONE in the process.
+ */
 static void
 mat_fill(matrix_s *mat)
 {
@@ -621,12 +700,21 @@ mat_init(matrix_s *mat, uint16_t rows, uint16_t cols, float drop_ratio)
 	return 0;
 }
 
+/*
+ * Free ALL the memory \o/
+ */
 void
 mat_free(matrix_s *mat)
 {
 	free(mat->data);
 }
 
+/*
+ * Try to figure out the terminal size, in character cells, and return that 
+ * info in the given winsize structure. Returns 0 on succes, -1 on error.
+ * However, you might still want to check if the ws_col and ws_row fields 
+ * actually contain values other than 0. They should. But who knows.
+ */
 int
 cli_wsize(struct winsize *ws)
 {
@@ -636,6 +724,9 @@ cli_wsize(struct winsize *ws)
 	return -1;
 }
 
+/*
+ * Prepare the terminal for the next paint iteration.
+ */
 void
 cli_clear(int rows)
 {
@@ -649,6 +740,9 @@ cli_clear(int rows)
 	fputs(ANSI_CURSOR_RESET, stdout);
 }
 
+/*
+ * Prepare the terminal for our matrix shenanigans.
+ */
 void
 cli_setup(options_s *opts)
 {
@@ -667,6 +761,9 @@ cli_setup(options_s *opts)
 	setvbuf(stdout, NULL, _IOFBF, 0);
 }
 
+/*
+ * Make sure the terminal goes back to its normal state.
+ */
 void
 cli_reset()
 {
@@ -737,6 +834,7 @@ main(int argc, char **argv)
 		opts.rand = time(NULL);
 	}
 	
+	// make sure the values are within expected/valid range
 	cap_uint8(&opts.speed, SPEED_FACTOR_MIN, SPEED_FACTOR_MAX);
 	cap_uint8(&opts.drops, DROPS_FACTOR_MIN, DROPS_FACTOR_MAX);
 	cap_uint8(&opts.error, ERROR_FACTOR_MIN, ERROR_FACTOR_MAX);
