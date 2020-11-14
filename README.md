@@ -8,7 +8,7 @@
 
 ## Overview 
 
-My take at an implementation of the digital character rain screen as seen in "The Matrix". 
+My take at an implementation of the [digital character rain](https://en.wikipedia.org/wiki/Matrix_digital_rain) as seen in "The Matrix". 
 
 The focus of this project is on low CPU and memory footprint, with the secondary 
 objective being to recreate the original effect, as seen in the movie, as closely 
@@ -70,3 +70,10 @@ Again, when comparing these numbers, note `fakesteak`s shortcomings in features 
 ## Support
 
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L22BUD8)
+
+## Related Projects
+
+- [cmatrix](https://github.com/abishekvashok/cmatrix)
+- [tmatrix](https://github.com/M4444/TMatrix)
+- [unimatrix](https://github.com/will8211/unimatrix)
+- [cxxmatrix](https://github.com/akinomyoga/cxxmatrix)
