@@ -2,9 +2,13 @@
 
 ![fakesteak](example2.png)
 
-My personal implementation of a digital character rain screen as seen in "The Matrix". 
+> You know, I know this steak doesn't exist. I know that when I put it in my mouth, the Matrix is telling my brain that it is juicy and delicious. After nine years, you know what I realize? Ignorance is bliss.
+
+ -- _Cypher_
 
 ## Overview 
+
+My take at an implementation of the digital character rain screen as seen in "The Matrix". 
 
 The focus of this project is on low CPU and memory footprint, with the secondary 
 objective being to recreate the original effect, as seen in the movie, as closely 
