@@ -26,6 +26,9 @@
 #define ANSI_HIDE_CURSOR "\e[?25l"
 #define ANSI_SHOW_CURSOR "\e[?25h"
 
+#define ANSI_CLEAR_SCREEN "\x1b[2J"
+#define ANSI_CURSOR_RESET "\x1b[H"
+
 #define BITMASK_ASCII 0x00FF
 #define BITMASK_STATE 0x0300
 #define BITMASK_TSIZE 0xFC00
@@ -58,7 +61,7 @@
 #define SPEED_FACTOR_MAX 1.00
 #define SPEED_FACTOR_DEF 0.10
 
-// rain colors (8 bit codes)
+// rain colors (8 bit codes), adjust to your liking
 //
 // index 0 is the color for the drop, the remaining colors
 // will be used for the tail, starting from index 1 for the 
@@ -67,11 +70,25 @@
 //
 // https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
 
-static uint8_t colors[] = { 231, 48, 41, 35, 29, 238 };
+#define COLOR_BG   "\x1b[48;5;0m"
 
-// make sure this matches the number of elements in `colors`
+#define COLOR_FG_0 "\x1b[38;5;231m"
+#define COLOR_FG_1 "\x1b[38;5;48m"
+#define COLOR_FG_2 "\x1b[38;5;41m"
+#define COLOR_FG_3 "\x1b[38;5;35m"
+#define COLOR_FG_4 "\x1b[38;5;29m"
+#define COLOR_FG_5 "\x1b[38;5;238m"
 
-//#define NUM_COLORS 6
+static char *colors[] =
+{
+	COLOR_FG_0,
+	COLOR_FG_1,
+	COLOR_FG_2,
+       	COLOR_FG_3,
+       	COLOR_FG_4, 
+	COLOR_FG_5
+};
+
 #define NUM_COLORS sizeof(colors) / sizeof(colors[0])
 
 // these are flags used for signal handling
@@ -112,8 +129,7 @@ typedef struct options
 	float   drops;         // drops ratio / factor
 	float   error;         // error ratio / factor
 	time_t  rand;          // seed for rand()
-	uint8_t bg_color;      // custom background color
-	uint8_t bg_set : 1;    // set background color
+	uint8_t bg : 1;        // set black background color
 	uint8_t help : 1;      // show help and exit
 	uint8_t version : 1;   // show version and exit
 }
@@ -124,13 +140,12 @@ parse_args(int argc, char **argv, options_s *opts)
 {
 	opterr = 0;
 	int o;
-	while ((o = getopt(argc, argv, "b:d:e:hr:s:V")) != -1)
+	while ((o = getopt(argc, argv, "bd:e:hr:s:V")) != -1)
 	{
 		switch (o)
 		{
 			case 'b':
-				opts->bg_set = 1;
-				opts->bg_color = atoi(optarg);
+				opts->bg = 1;
 				break;
 			case 'd':
 				opts->drops = atof(optarg);
@@ -224,18 +239,6 @@ static uint8_t
 rand_ascii()
 {
 	return rand_int_mincap(ASCII_MIN, ASCII_MAX);
-}
-
-static void
-color_fg(uint8_t color)
-{
-	printf("\x1b[38;5;%hhum", color);
-}
-
-static void
-color_bg(uint8_t color)
-{
-	printf("\x1b[48;5;%hhum", color);
 }
 
 //
@@ -375,11 +378,11 @@ mat_print(matrix_s *mat)
 				fputc(' ', stdout);
 				break;
 			case STATE_DROP:
-				color_fg(colors[0]);
+				fputs(colors[0], stdout);
 				fputc(val_get_ascii(value), stdout);
 				break;
 			case STATE_TAIL:
-				color_fg(colors[val_get_tsize(value)]);
+				fputs(colors[val_get_tsize(value)], stdout);
 				fputc(val_get_ascii(value), stdout);
 				break;
 		}
@@ -628,19 +631,26 @@ cli_clear(int rows)
 {
 	//printf("\033[%dA", rows); // cursor up 
 	//printf("\033[2J"); // clear screen
-	printf("\033[H");  // cursor back to top, left
+	//printf("\033[H");  // cursor back to top, left
 	//printf("\033[%dT", rows); // scroll down
 	//printf("\033[%dN", rows); // scroll up
+
+	fputs(ANSI_CURSOR_RESET, stdout);
 }
 
 void
-cli_setup()
+cli_setup(options_s *opts)
 {
-	fprintf(stdout, ANSI_HIDE_CURSOR);
-	fprintf(stdout, ANSI_FONT_BOLD);
+	fputs(ANSI_HIDE_CURSOR, stdout);
+	fputs(ANSI_FONT_BOLD, stdout);
 
-	printf("\033[2J"); // clear screen
-	printf("\033[H");  // cursor back to top, left
+	if (opts->bg)
+	{
+		fputs(COLOR_BG, stdout);
+	}
+
+	fputs(ANSI_CLEAR_SCREEN, stdout); // clear screen
+	fputs(ANSI_CURSOR_RESET, stdout); // cursor back to position 0,0
 	
 	// set the buffering to fully buffered, we're adult and flush ourselves
 	setvbuf(stdout, NULL, _IOFBF, 0);
@@ -649,11 +659,11 @@ cli_setup()
 void
 cli_reset()
 {
-	fprintf(stdout, ANSI_FONT_RESET);
-	fprintf(stdout, ANSI_SHOW_CURSOR);
+	fputs(ANSI_FONT_RESET, stdout);   // resets font colors and weight/effects
+	fputs(ANSI_SHOW_CURSOR, stdout);  // show the cursor again
 	
-	printf("\033[2J"); // clear screen
-	printf("\033[H");  // cursor back to top, left
+	fputs(ANSI_CLEAR_SCREEN, stdout); // clear screen
+	fputs(ANSI_CURSOR_RESET, stdout); // cursor back to position 0,0
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 }
@@ -742,7 +752,8 @@ main(int argc, char **argv)
 	mat_fill(&mat);
 
 	// prepare the terminal for our shenanigans
-	cli_setup();
+	cli_setup(&opts);
+
 
 	running = 1;
 	while(running)
