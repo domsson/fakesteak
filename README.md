@@ -52,7 +52,7 @@ the number of glitches in the matrix (randomly changing characters).
 
 ## Performance
 
-I've compared CPU and RAM usage against that of [`cmatrix`](https://github.com/abishekvashok/cmatrix), [`tmatrix`](https://github.com/M4444/TMatrix) and [`unimatrix`](https://github.com/will8211/unimatrix) a little, all of which offer better portability and more featuers. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all programs in urxvt, with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
+I've compared CPU and RAM usage against that of [`cmatrix`](https://github.com/abishekvashok/cmatrix), [`tmatrix`](https://github.com/M4444/TMatrix) and [`unimatrix`](https://github.com/will8211/unimatrix) a little, all of which offer better portability and more features. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all programs in urxvt, with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
 
 |                      | CPU   | RAM    | disk | Language | ran as                     |
 |----------------------|-------|--------|------|----------|----------------------------|
