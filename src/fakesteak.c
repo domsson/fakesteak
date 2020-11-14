@@ -857,9 +857,9 @@ main(int argc, char **argv)
 	float error_ratio = ERROR_BASE_VALUE * opts.error;
 
 	// set up the nanosleep struct
-	uint8_t  seconds     = (int) wait;
-	uint32_t nanoseconds = (wait - seconds) * NS_PER_SEC;
-	struct timespec ts = { .tv_sec = seconds, .tv_nsec = nanoseconds };
+	uint8_t  sec  = (int) wait;
+	uint32_t nsec = (wait - sec) * NS_PER_SEC;
+	struct timespec ts = { .tv_sec = sec, .tv_nsec = nsec };
 	
 	// seed the random number generator with the current unix time
 	srand(opts.rands);
