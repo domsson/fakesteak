@@ -11,9 +11,9 @@ objective being to recreate the original effect, as seen in the movie, as closel
 as possible. For simplicities sake, however, there will be no Japanese characters. 
 
 `fakesteak` has no external dependencies (it works without ncurses), but instead 
-uses some non portable code instead. There aren't too many options available, but 
-by tweaking some of the `#defines` at the top of the file, customization is quite 
-easily possible.
+uses some non portable code instead. There are a couple of command line options 
+available, and by tweaking some of the `#defines` at the top of the file, further 
+customization is quite easily possible.
 
 I've written this on and for Linux. Everything seems to be working well using 
 urxvt, xterm, lxterm or uxterm. Other OS and terminals have not yet been tested. 
