@@ -63,3 +63,6 @@ I've compared CPU and RAM usage against that of [`cmatrix`](https://github.com/a
 
 Again, when comparing these numbers, note `fakesteak`s shortcomings in features and portability compared to the other implementations.
 
+## Support
+
+[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L22BUD8)
