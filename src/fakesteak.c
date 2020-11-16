@@ -6,7 +6,7 @@
 #include <math.h>       // ceil()
 #include <time.h>       // time(), nanosleep(), struct timespec
 #include <signal.h>     // sigaction(), struct sigaction
-#include <termios.h>    // struct winsize 
+#include <termios.h>    // struct winsize, struct termios, tcgetattr(), ...
 #include <sys/ioctl.h>  // ioctl(), TIOCGWINSZ
 
 // program information
@@ -728,9 +728,6 @@ cli_wsize(struct winsize *ws)
 static int
 cli_echo(int on)
 {
-#ifndef TCSAFLUSH
-	return -1;
-#endif
 	struct termios ta;
 	if (tcgetattr(STDIN_FILENO, &ta) != 0)
 	{
