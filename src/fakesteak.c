@@ -440,19 +440,24 @@ mat_print(matrix_s *mat)
 		state = val_get_state(value);
 
 		// fputc() + fputs() is faster than one call to printf()
+		// TODO investigate if the *_unlocked functions are faster;
+		//      and also, if faster, are they safe to use here?
 
 		switch (state)
 		{
 			case STATE_NONE:
 				fputc(' ', stdout);
+				//fputc_unlocked(' ', stdout);
 				break;
 			case STATE_DROP:
 				fputs(colors[0], stdout);
 				fputc(val_get_ascii(value), stdout);
+				//fputc_unlocked(val_get_ascii(value), stdout);
 				break;
 			case STATE_TAIL:
 				fputs(colors[val_get_tsize(value)], stdout);
 				fputc(val_get_ascii(value), stdout);
+				//fputc_unlocked(val_get_ascii(value), stdout);
 				break;
 		}
 	}
@@ -741,7 +746,7 @@ cli_echo(int on)
  * Prepare the terminal for the next paint iteration.
  */
 static void
-cli_clear(int rows)
+cli_clear()
 {
 	//printf("\033[%dA", rows); // cursor up 
 	//printf("\033[2J"); // clear screen
@@ -903,7 +908,7 @@ main(int argc, char **argv)
 			resized = 0;
 		}
 
-		cli_clear(mat.rows);
+		cli_clear();
 		mat_print(&mat);                // print to the terminal
 		mat_glitch(&mat, error_ratio);  // apply random defects
 		mat_update(&mat);               // move all drops down one row
