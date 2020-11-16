@@ -16,7 +16,7 @@
 
 #define PROGRAM_VER_MAJOR 0
 #define PROGRAM_VER_MINOR 2
-#define PROGRAM_VER_PATCH 2
+#define PROGRAM_VER_PATCH 3
 
 // colors, adjust to your liking
 // https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
@@ -716,16 +716,34 @@ mat_free(matrix_s *mat)
 int
 cli_wsize(struct winsize *ws)
 {
-#ifdef TIOCGWINSZ
-	return ioctl(STDOUT_FILENO, TIOCGWINSZ, ws);
-#endif
+#ifndef TIOCGWINSZ
 	return -1;
+#endif
+	return ioctl(STDOUT_FILENO, TIOCGWINSZ, ws);
+}
+
+/*
+ * Turn echoing of keyboard input on/off.
+ */
+static int
+cli_echo(int on)
+{
+#ifndef TCSAFLUSH
+	return -1;
+#endif
+	struct termios ta;
+	if (tcgetattr(STDIN_FILENO, &ta) != 0)
+	{
+		return -1;
+	}
+	ta.c_lflag = on ? ta.c_lflag | ECHO : ta.c_lflag & ~ECHO;
+	return tcsetattr(STDIN_FILENO, TCSAFLUSH, &ta);
 }
 
 /*
  * Prepare the terminal for the next paint iteration.
  */
-void
+static void
 cli_clear(int rows)
 {
 	//printf("\033[%dA", rows); // cursor up 
@@ -741,7 +759,7 @@ cli_clear(int rows)
 /*
  * Prepare the terminal for our matrix shenanigans.
  */
-void
+static void
 cli_setup(options_s *opts)
 {
 	fputs(ANSI_HIDE_CURSOR, stdout);
@@ -754,6 +772,7 @@ cli_setup(options_s *opts)
 
 	fputs(ANSI_CLEAR_SCREEN, stdout); // clear screen
 	fputs(ANSI_CURSOR_RESET, stdout); // cursor back to position 0,0
+	cli_echo(0);                      // don't show keyboard input
 	
 	// set the buffering to fully buffered, we're adult and flush ourselves
 	setvbuf(stdout, NULL, _IOFBF, 0);
@@ -762,14 +781,14 @@ cli_setup(options_s *opts)
 /*
  * Make sure the terminal goes back to its normal state.
  */
-void
+static void
 cli_reset()
 {
-	fputs(ANSI_FONT_RESET, stdout);   // resets font colors and weight/effects
+	fputs(ANSI_FONT_RESET, stdout);   // resets font colors and effects
 	fputs(ANSI_SHOW_CURSOR, stdout);  // show the cursor again
-	
 	fputs(ANSI_CLEAR_SCREEN, stdout); // clear screen
 	fputs(ANSI_CURSOR_RESET, stdout); // cursor back to position 0,0
+	cli_echo(1);                      // show keyboard input
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 }
