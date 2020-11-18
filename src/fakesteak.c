@@ -11,12 +11,12 @@
 
 // program information
 
-#define PROGRAM_NAME "charrain"
-#define PROGRAM_URL  "https://github.com/domsson/charrain"
+#define PROGRAM_NAME "fakesteak"
+#define PROGRAM_URL  "https://github.com/domsson/fakesteak"
 
 #define PROGRAM_VER_MAJOR 0
 #define PROGRAM_VER_MINOR 2
-#define PROGRAM_VER_PATCH 3
+#define PROGRAM_VER_PATCH 4
 
 // colors, adjust to your liking
 // https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
