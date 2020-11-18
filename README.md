@@ -27,14 +27,13 @@ Your feedback is welcome, but I don't plan on adding support for Windows/Mac OS.
 
 - Terminal that supports 256 colors ([8 bit color mode](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit))
 - Requires `TIOCGWINSZ` to be supported (to query the terminal size)
+- Requires Make for building
 
 ## Building / Running
 
-You can just run the included `build` script. After that, you should be able to run it from the `bin` directory:
+You can just run `make`. After that, you should be able to run it from the `bin` directory:
 
-    chmod +x ./build
-    ./build
-    chmod +x ./bin/fakesteak
+    make
     ./bin/fakesteak
 
 ## Usage

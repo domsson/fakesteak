@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-#gcc -Wall -g -o bin/fakesteak src/fakesteak.c -lm
-gcc -Wall -O3 -o bin/fakesteak src/fakesteak.c -lm
