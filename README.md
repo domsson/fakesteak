@@ -15,8 +15,8 @@ objective being to recreate the original effect, as seen in the movie, as closel
 as possible. For simplicities sake, however, there will be no Japanese characters. 
 
 `fakesteak` has no external dependencies (it works without ncurses), but uses 
-some non portable code instead. There are some command line options available, 
-and by tweaking some of the `#defines` at the top of the file, further 
+some potentially non portable code instead. There are some command line options 
+available, and by tweaking some of the `#defines` at the top of the file, further 
 customization - for example of the colors - is easily possible.
 
 I've written this on and for Linux. Everything seems to be working well using 
@@ -55,7 +55,14 @@ the number of glitches in the matrix (randomly changing characters).
 
 ## Performance
 
-I've compared CPU and RAM usage against that of some other popular matrix rain implementations a little. CPU usage is from `top`, memory via `smem`, looking at PSS. I've ran all programs in urxvt, with settings that give somewhat similar visual results, in a full screen terminal (1920x1080 px). Here are the approximate findings:
+Since the main focus of `fakesteak` is performance, I tried comparing it to other popular implementations. **Note, however, that this comparison is inaccurate and unfair at best**, mainly for the following reasons:
+
+- All projects have different design goals, feature sets and visual fidelity
+- The measurements are just rounded estimates aquired from `top` and `smem -tk` (PSS)
+
+For example, `fakesteak` is Linux only and does not support Japanese Katakana characters, while most other projects are cross-platform and do have Kana support. Also, note how `cxxmatrix`, for example, focuses on visuals, rendering three layers of rain with a glow effect.
+
+All projects were run in a 1920 x 1080 px urxvt terminal with options that give _somewhat_ similar visual results, see the "ran as" column below.
 
 |                      | CPU      | RAM    | disk  | Language | ran as                      |
 |----------------------|----------|--------|-------|----------|-----------------------------|
@@ -64,8 +71,6 @@ I've compared CPU and RAM usage against that of some other popular matrix rain i
 |   tmatrix v1.3       |     ~8 % | ~2.1 M |  87 K | C++      | tmatrix --gap=30,70         |
 | unimatrix 2018/01/09 |    ~11 % | ~9.4 M |  26 K | Python   | unimatrix -b -s=90 -l=o -f  |
 | cxxmatrix 2020/09/27 | ~20-55 % | ~4.5 M | 124 K | C++      | cxxmatrix -s 'rain-forever' |
-
-Note, however, that some of these other projects offer more features and/or portability.
 
 ## Support
 
