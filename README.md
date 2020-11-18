@@ -60,7 +60,7 @@ Since the main focus of `fakesteak` is performance, I tried comparing it to othe
 - All projects have different design goals, feature sets and visual fidelity
 - The measurements are just rounded estimates aquired from `top` and `smem -tk` (PSS)
 
-For example, `fakesteak` is Linux only and does not support Japanese Katakana characters, while most other projects are cross-platform and do have Kana support. Also, note how `cxxmatrix`, for example, focuses on visuals, rendering three layers of rain with a glow effect.
+For example, `fakesteak` is Linux only and does not support Japanese Katakana characters, while most other projects are cross-platform and do have Kana support. Also, note how `cxxmatrix`, for example, focuses on visuals, rendering three layers of rain with a glow effect. See [this reddit thread](https://www.reddit.com/r/unixporn/comments/ju62xa/oc_fakesteak_yet_another_matrix_rain_generator/gcdu5tl/) for further discussion.
 
 All projects were run in a 1920 x 1080 px urxvt terminal with options that give _somewhat_ similar visual results, see the "ran as" column below.
 
