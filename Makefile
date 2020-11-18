@@ -4,14 +4,12 @@ LDLIBS := -lm
 PREFIX := /usr/local/
 NAME := fakesteak
 
-
 all bin/$(NAME):
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o bin/$(NAME) src/$(NAME).c $(LDLIBS)
 
 debug: CFLAGS += -g
 debug: all
-
 
 install: bin/$(NAME)
 	mkdir -p $(PREFIX)/bin
