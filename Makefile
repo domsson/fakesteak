@@ -1,36 +1,25 @@
-CC = cc
-SHELL = /bin/sh
+CC := cc
 CFLAGS += -Wall -O3
-LDFLAGS += -lm
-PREFIX = /usr/local
+LDLIBS := -lm
+PREFIX := /usr/local/
+NAME := fakesteak
 
-NAME = fakesteak
-
-SRCS:= $(shell find src -name "*.c")
-
-OBJS = $(SRCS:.c=.o)
-
-all: $(NAME)
-
-$(NAME): $(OBJS)
+all:
 	mkdir -p bin
-	$(CC) $(CFLAGS) -o bin/$(NAME) $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o bin/$(NAME) src/$(NAME).c $(LDLIBS)
 
-.o: .c
-	$(CC) $(CFLAGS) -c $< -o $@
+debug: CFLAGS += -g
+debug: all
 
-clean:
-	find src -name "*.o" -delete -print
-	rm -f bin/$(NAME)
-
-install: $(NAME)
+install: bin/$(NAME)
+	mkdir -p $(PREFIX)/bin
 	cp bin/$(NAME) $(PREFIX)/bin
 	chmod +x $(PREFIX)/bin/$(NAME)
 
 uninstall:
-	rm $(PREFIX)/bin/$(NAME)
+	rm $(PREFIX)/bin/$(NAME)     
 
-debug: CFLAGS += -g
-debug: clean $(NAME)
+clean:
+	rm -f bin/$(NAME)
 
-.PHONY: all clean install uninstall debug
+.PHONY = all debug install uninstall clean
