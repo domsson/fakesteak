@@ -227,7 +227,7 @@ on_signal(int sig)
  * Make sure `val` is within the range [min, max].
  */
 static void
-cap_uint8(uint8_t *val, uint8_t min, uint8_t max)
+clamp_uint8(uint8_t *val, uint8_t min, uint8_t max)
 {
 	if (*val < min) { *val = min; return; }
 	if (*val > max) { *val = max; return; }
@@ -652,11 +652,6 @@ mat_update(matrix_s *mat)
 	int drops_missing = drops_desired - mat->drop_count; 
 	int drops_to_add  = ceil(drops_missing / (float) mat->rows);
 
-	//fprintf(stderr, "drop count:    %lu\n", mat->drop_count);
-	//fprintf(stderr, "drops desired: %d\n", drops_desired);
-	//fprintf(stderr, "drops missing: %d\n", drops_missing);
-	//fprintf(stderr, "drops to add:  %d\n", drops_to_add);
-
 	for (int i = 0; i <= drops_to_add; ++i)
 	{
 		mat_add_drop(mat, 0, rand_int(0, mat->cols - 1), 
@@ -748,12 +743,6 @@ cli_echo(int on)
 static void
 cli_clear()
 {
-	//printf("\033[%dA", rows); // cursor up 
-	//printf("\033[2J"); // clear screen
-	//printf("\033[H");  // cursor back to top, left
-	//printf("\033[%dT", rows); // scroll down
-	//printf("\033[%dN", rows); // scroll up
-
 	//fputs(ANSI_CLEAR_SCREEN, stdout); // just for debug, remove otherwise
 	fputs(ANSI_CURSOR_RESET, stdout);
 }
@@ -854,9 +843,9 @@ main(int argc, char **argv)
 	}
 	
 	// make sure the values are within expected/valid range
-	cap_uint8(&opts.speed, SPEED_FACTOR_MIN, SPEED_FACTOR_MAX);
-	cap_uint8(&opts.drops, DROPS_FACTOR_MIN, DROPS_FACTOR_MAX);
-	cap_uint8(&opts.error, ERROR_FACTOR_MIN, ERROR_FACTOR_MAX);
+	clamp_uint8(&opts.speed, SPEED_FACTOR_MIN, SPEED_FACTOR_MAX);
+	clamp_uint8(&opts.drops, DROPS_FACTOR_MIN, DROPS_FACTOR_MAX);
+	clamp_uint8(&opts.error, ERROR_FACTOR_MIN, ERROR_FACTOR_MAX);
 
 	// get the terminal dimensions
 	struct winsize ws = { 0 };
