@@ -1,6 +1,6 @@
 # fakesteak 
 
-![fakesteak](example2.png)
+[![fakesteak asciicast](https://asciinema.org/a/z9gykqvDEfmh9aKVlJtu3LOCs.svg)](https://asciinema.org/a/z9gykqvDEfmh9aKVlJtu3LOCs)
 
 > You know, I know this steak doesn't exist. I know that when I put it in my mouth, the Matrix is telling my brain that it is juicy and delicious. After nine years, you know what I realize? Ignorance is bliss.
 
