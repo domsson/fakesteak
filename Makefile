@@ -1,4 +1,3 @@
-CC := cc
 CFLAGS += -Wall -O3
 LDLIBS := -lm
 PREFIX := /usr/local/
