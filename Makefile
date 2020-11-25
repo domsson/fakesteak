@@ -1,24 +1,30 @@
 CFLAGS += -Wall -O3
 LDLIBS := -lm
-PREFIX := /usr/local/
+PREFIX := /usr/local
+BINDIR := $(PREFIX)/bin
 NAME := fakesteak
 
-all bin/$(NAME):
+all: bin/$(NAME)
+
+bin/$(NAME): src/$(NAME).c 
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o bin/$(NAME) src/$(NAME).c $(LDLIBS)
 
 debug: CFLAGS += -g
-debug: all
+debug: bin/$(NAME)
 
 install: bin/$(NAME)
-	mkdir -p $(PREFIX)/bin
-	cp bin/$(NAME) $(PREFIX)/bin
-	chmod +x $(PREFIX)/bin/$(NAME)
+	mkdir -p $(BINDIR)
+	cp bin/$(NAME) $(BINDIR)
+	chmod +x $(BINDIR)/$(NAME)
+
+install-strip: install
+	strip $(BINDIR)/$(NAME)
 
 uninstall:
-	rm $(PREFIX)/bin/$(NAME)     
+	rm $(BINDIR)/$(NAME)     
 
 clean:
 	rm -f bin/$(NAME)
 
-.PHONY = all debug install uninstall clean
+.PHONY = all debug install install-strip uninstall clean
