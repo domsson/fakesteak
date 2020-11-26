@@ -8,20 +8,27 @@
 
 ## Overview 
 
-My take at an implementation of the [digital character rain](https://en.wikipedia.org/wiki/Matrix_digital_rain) as seen in "The Matrix". 
+My take at an implementation of the [digital character rain](https://en.wikipedia.org/wiki/Matrix_digital_rain) 
+as seen in "The Matrix". 
 
-The focus of this project is on low CPU and memory footprint, with the secondary 
-objective being to recreate the original effect, as seen in the movie, as closely 
-as possible. For simplicities sake, however, there will be no Japanese characters. 
+Some things you might like about fakesteak:
 
-`fakesteak` has no external dependencies (it works without ncurses), but uses 
-some potentially non portable code instead. There are some command line options 
-available, and by tweaking some of the `#defines` at the top of the file, further 
-customization - for example of the colors - is easily possible.
+ - Small footprint (low on RAM and disk usage)
+ - Good performance (low on CPU usage)
+ - Looks pretty close to the original (fading, glitches)
+ - Basic customization via command line options
+ - No dependencies (not even ncurses)
+ - Clean, well commented code
+ - Public Domain
 
-I've written this on and for Linux. Everything seems to be working well using 
-urxvt, xterm, lxterm or uxterm. Other OS and terminals have not yet been tested. 
-Your feedback is welcome, but I don't plan on adding support for Windows/Mac OS. 
+Some things that migth rub you the wrong way:
+
+ - No Japanese characters (for simplicity's sake)
+ - Not cross-platform (no Win/Mac)
+
+Successfully tested on Linux (urxvt, xterm, lxterm, uxterm) and FreeBSD (st). 
+Feedback on compatibility with your OS / distro / terminal is very welcome; 
+you can open an issue to let me know.
 
 ## Dependencies / Requirements
 
@@ -55,14 +62,20 @@ the number of glitches in the matrix (randomly changing characters).
 
 ## Performance
 
-Since the main focus of `fakesteak` is performance, I tried comparing it to other popular implementations. **Note, however, that this comparison is inaccurate and unfair at best**, mainly for the following reasons:
+Since the main focus of `fakesteak` is performance, I tried comparing it to other popular 
+implementations. **Note, however, that this comparison is inaccurate and unfair at best**, 
+mainly for the following reasons:
 
 - All projects have different design goals, feature sets and visual fidelity
 - The measurements are just rounded estimates aquired from `top` and `smem -tk` (PSS)
 
-For example, `fakesteak` is Linux only and does not support Japanese Katakana characters, while most other projects are cross-platform and do have Kana support. Also, note how `cxxmatrix`, for example, focuses on visuals, rendering three layers of rain with a glow effect. See [this reddit thread](https://www.reddit.com/r/unixporn/comments/ju62xa/oc_fakesteak_yet_another_matrix_rain_generator/gcdu5tl/) for further discussion.
+For example, `fakesteak` is \*nix only and does not support Japanese Katakana characters, 
+while most other projects are cross-platform and do have Kana support. Also, note how `cxxmatrix`, 
+for example, focuses on visuals, rendering three layers of rain with a glow effect. 
+See [this reddit thread](https://www.reddit.com/r/unixporn/comments/ju62xa/oc_fakesteak_yet_another_matrix_rain_generator/gcdu5tl/) for further discussion.
 
-All projects were run in a 1920 x 1080 px urxvt terminal with options that give _somewhat_ similar visual results, see the "ran as" column below.
+All projects were run in a 1920 x 1080 px urxvt terminal with options that give _somewhat_ 
+similar visual results, see the "ran as" column below.
 
 |                      | CPU      | RAM    | disk  | Language | ran as                      |
 |----------------------|----------|--------|-------|----------|-----------------------------|
