@@ -21,7 +21,7 @@ Some things you might like about fakesteak:
  - Clean, well commented code
  - Public Domain
 
-Some things that migth rub you the wrong way:
+Some things that might rub you the wrong way:
 
  - No Japanese characters (for simplicity's sake)
  - Not cross-platform (no Win/Mac)
