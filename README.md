@@ -80,13 +80,13 @@ similar visual results. At least the speed of the rain is almost exactly the sam
 but density and visual fidelity (Kanas, fading, glow, etc) do differ. See the "arguments" 
 column below to see how I've ran each implementation.
 
-|                      | CPU      | RAM    | disk  | Lang.    | arguments                                          |
-|----------------------|----------|--------|-------|----------|----------------------------------------------------|
-| fakesteak v0.2.0     |     ~5 % | ~170 K |  19 K | C        | `-d 15`                                            |
-|   cmatrix v2.0       |     ~8 % | ~900 K |  22 K | C        | `-b -u 10`                                         |
-|   tmatrix v1.3       |     ~9 % | ~2.0 M |  87 K | C++      | `-g 30,70 -f 1,1 -c default`                       |
-| cxxmatrix 2020-11-18 |  ~13\* % | ~4.5 M | 114 K | C++      | `-s rain-forever --frame-rate=10 --error-rate=0.1` |
-| unimatrix 2018-01-09 |    ~15 % | ~9.4 M |  26 K | Python   | `-s 90 -l=o -f`                                    |
+|                      | CPU     | RAM   | disk | Lang.    | arguments                                          |
+|----------------------|---------|-------|------|----------|----------------------------------------------------|
+| fakesteak v0.2.0     |     ~5% | ~170K |  19K | C        | `-d 15`                                            |
+|   cmatrix v2.0       |     ~8% | ~900K |  22K | C        | `-b -u 10`                                         |
+|   tmatrix v1.3       |     ~9% | ~2.0M |  87K | C++      | `-g 30,70 -f 1,1 -c default`                       |
+| cxxmatrix 2020-11-18 |  ~13\*% | ~4.5M | 114K | C++      | `-s rain-forever --frame-rate=10 --error-rate=0.1` |
+| unimatrix 2018-01-09 |    ~15% | ~9.4M |  26K | Python   | `-s 90 -l=o -f`                                    |
 
 **Note**: cxxmatrix behaves a bit odd on my system. If the terminal window is visible, 
 it uses about 13% CPU. If it isn't (for example, by switching to another workspace), 
