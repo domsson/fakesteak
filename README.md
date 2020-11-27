@@ -88,7 +88,7 @@ column below to see how I've ran each implementation.
 | cxxmatrix<br>2020-11-18 |  ~13\* % | ~4.5 M | 114 K | C++      | `-s rain-forever --frame-rate=10 --error-rate=0.1` |
 | unimatrix<br>2018-01-09 |    ~15 % | ~9.4 M |  26 K | Python   | `-s 90 -l=o -f`                                    |
 
-**Note**: cxxmatrix behaves a bit odd on my system. If the terminal window is visible, 
+\*Note): cxxmatrix behaves a bit odd on my system. If the terminal window is visible, 
 it uses about 13% CPU. If it isn't (for example, by switching to another workspace), 
 the CPU load doubles.
 
