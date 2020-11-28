@@ -82,7 +82,7 @@ column below to see how I've ran each implementation.
 
 |                         | CPU      | RAM    | disk  | Lang.    | arguments                                          |
 |-------------------------|----------|--------|-------|----------|----------------------------------------------------|
-| fakesteak<br>v0.2.0     |     ~5 % | ~170 K |  19 K | C        | `-d 15`                                            |
+| fakesteak<br>v0.2.4     |     ~5 % | ~170 K |  19 K | C        | `-d 15`                                            |
 |   cmatrix<br>v2.0       |     ~8 % | ~900 K |  22 K | C        | `-b -u 10`                                         |
 |   tmatrix<br>v1.3       |     ~9 % | ~2.0 M |  87 K | C++      | `-g 30,70 -f 1,1 -c default`                       |
 | cxxmatrix<br>2020-11-18 |  ~13\* % | ~4.5 M | 114 K | C++      | `-s rain-forever --frame-rate=10 --error-rate=0.1` |
