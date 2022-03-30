@@ -103,3 +103,4 @@ the CPU load doubles.
 - [unimatrix](https://github.com/will8211/unimatrix)
 - [cxxmatrix](https://github.com/akinomyoga/cxxmatrix)
 - [rusty-rain](https://github.com/cowboy8625/rusty-rain)
+- [neo](https://github.com/st3w/neo)
