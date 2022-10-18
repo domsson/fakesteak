@@ -66,10 +66,6 @@
 #define STATE_DROP 1
 #define STATE_TAIL 2
 
-#define DEBUG_ASCII 1
-#define DEBUG_STATE 2
-#define DEBUG_TSIZE 3
-
 #define TSIZE_MIN 8
 #define TSIZE_MAX 63
 
@@ -466,38 +462,6 @@ mat_print(matrix_s *mat)
 }
 
 /*
- * Print debug info for the matrix to stdout.
- */
-static void
-mat_debug(matrix_s *mat, int what)
-{
-	fputs(ANSI_FONT_RESET, stdout);
-
-	uint16_t value = 0;
-	size_t   size  = mat->cols * mat->rows;
-
-	for (int i = 0; i < size; ++i)
-	{
-		value = mat->data[i];
-
-		switch (what)
-		{
-			case DEBUG_STATE:
-				fprintf(stdout, "%"PRIu8, val_get_state(value));
-				break;
-			case DEBUG_ASCII:
-				fprintf(stdout, "%c",   val_get_ascii(value));
-				break;
-			case DEBUG_TSIZE:
-				fprintf(stdout, "%"PRIu8, val_get_tsize(value));
-				break;
-		}
-	}
-
-	fflush(stdout);
-}
-
-/*
  * Turn the specified cell into a DROP cell.
  */
 static void
@@ -743,7 +707,6 @@ cli_echo(int on)
 static void
 cli_clear()
 {
-	//fputs(ANSI_CLEAR_SCREEN, stdout); // just for debug, remove otherwise
 	fputs(ANSI_CURSOR_RESET, stdout);
 }
 
@@ -901,7 +864,6 @@ main(int argc, char **argv)
 		mat_print(&mat);                // print to the terminal
 		mat_glitch(&mat, error_ratio);  // apply random defects
 		mat_update(&mat);               // move all drops down one row
-		//mat_debug(&mat, DEBUG_TSIZE);
 		nanosleep(&ts, NULL);
 	}
 
