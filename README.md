@@ -60,6 +60,28 @@ Options:
 The drops ratio determines the density of the matrix, while the error ratio influences
 the number of glitches in the matrix (randomly changing characters). 
 
+## Changinge the colors
+
+Changing the colors is possible, but requires editing and recompiling the source code. 
+It is pretty simple though. First, open up `src/fakestake.c` and find lines 24 through 30:
+
+	#define COLOR_BG   "\x1b[48;5;0m"   // background color, if to be used
+	#define COLOR_FG_0 "\x1b[38;5;231m" // color for the drop
+	#define COLOR_FG_1 "\x1b[38;5;48m"  // color for first tail cell
+	#define COLOR_FG_2 "\x1b[38;5;41m"  // ...
+	#define COLOR_FG_3 "\x1b[38;5;35m"  // ...
+	#define COLOR_FG_4 "\x1b[38;5;29m"  // ...
+	#define COLOR_FG_5 "\x1b[38;5;238m" // color for the last tail cell
+
+Then, find yourself an 8-bit ANSI color code chart, like the one on the 
+[Wikipedia page on ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit).
+
+Next, find yourself six similar colors that are supposed to make up the drops and their 
+gradient trace. Note down their numbers and then, in the above code, replace the number 
+between the last `;` and the `m` with your picks, respectively. That is, replace `231`, 
+`48`, `41`, `35`, `29` and `238` as you see fit. You can also change the background 
+color, `0`, which is going to be used if you use the `-b` command line argument.
+
 ## Performance
 
 Since the main focus of `fakesteak` is performance, I tried comparing it to other popular 
