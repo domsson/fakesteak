@@ -52,8 +52,8 @@
 #define ANSI_FONT_BOLD  "\x1b[1m"
 #define ANSI_FONT_FAINT "\x1b[2m"
 
-#define ANSI_HIDE_CURSOR "\e[?25l"
-#define ANSI_SHOW_CURSOR "\e[?25h"
+#define ANSI_HIDE_CURSOR "\x1b[?25l"
+#define ANSI_SHOW_CURSOR "\x1b[?25h"
 
 #define ANSI_CLEAR_SCREEN "\x1b[2J"
 #define ANSI_CURSOR_RESET "\x1b[H"
