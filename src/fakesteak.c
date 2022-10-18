@@ -129,7 +129,7 @@ typedef struct options
 	uint8_t drops;         // drops ratio / factor
 	uint8_t error;         // error ratio / factor
 	time_t  rands;         // seed for rand()
-	uint8_t bg : 1;        // set black background color
+	uint8_t bg : 1;        // use background color
 	uint8_t help : 1;      // show help and exit
 	uint8_t version : 1;   // show version and exit
 }

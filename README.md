@@ -49,7 +49,7 @@ You can just run `make`. After that, you should be able to run it from the `bin`
 
 Options:
 
-  - `-b`: use black background color
+  - `-b`: use background color
   - `-d`: drops ratio ([1..100], default is 10)
   - `-e`: error ratio ([1..100], default is 2)
   - `-h`: print help text and exit
