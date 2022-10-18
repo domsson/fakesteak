@@ -325,30 +325,12 @@ mat_get_value(matrix_s *mat, int row, int col)
 }
 
 /*
- * Get the 8 bit ASCII char from the cell at the given row and column.
- */
-static uint8_t
-mat_get_ascii(matrix_s *mat, int row, int col)
-{
-	return val_get_ascii(mat_get_value(mat, row, col));
-}
-
-/*
  * Get the 2 bit cell state from the cell at the given row and column.
  */
 static uint8_t
 mat_get_state(matrix_s *mat, int row, int col)
 {
 	return val_get_state(mat_get_value(mat, row, col));
-}
-
-/*
- * Get the 6 bit tail size from the cell at the given row and column.
- */
-static uint8_t
-mat_get_tsize(matrix_s *mat, int row, int col)
-{
-	return val_get_tsize(mat_get_value(mat, row, col));
 }
 
 /*
