@@ -78,9 +78,9 @@ Then, find yourself an 8-bit ANSI color code chart, like the one on the
 
 Next, find yourself six similar colors that are supposed to make up the drops and their 
 gradient trace. Note down their numbers and then, in the above code, replace the number 
-between the last `;` and the `m` with your picks, respectively. That is, replace `231`, 
-`48`, `41`, `35`, `29` and `238` as you see fit. You can also change the background 
-color, `0`, which is going to be used if you use the `-b` command line argument.
+between the last `;` and the `m`, respectively. That is, replace `231`, `48`, `41`, `35`, 
+`29` and `238` as you see fit. You can also change the background color, `0`, which is 
+going to be used if you use the `-b` command line argument.
 
 ## Performance
 
