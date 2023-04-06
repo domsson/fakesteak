@@ -26,7 +26,7 @@ Some things that might rub you the wrong way:
  - No Japanese characters (for simplicity's sake)
  - Not cross-platform (no Win/Mac)
 
-Successfully tested on Linux (urxvt, xterm, lxterm, uxterm) and FreeBSD (st). 
+Successfully tested on Linux (urxvt, xterm, lxterm, uxterm), FreeBSD (st) and WSL2. 
 Feedback on compatibility with your OS / distro / terminal is very welcome; 
 you can open an issue to let me know.
 
@@ -42,6 +42,11 @@ You can just run `make`. After that, you should be able to run it from the `bin`
 
     make
     ./bin/fakesteak
+    
+Optionally, you can install fakesteak for all users and then run it from wherever:
+
+    make install
+    fakesteak
 
 ## Usage
 
