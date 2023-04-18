@@ -36,6 +36,12 @@ you can open an issue to let me know.
 - Requires `TIOCGWINSZ` to be supported (to query the terminal size)
 - Requires Make for building
 
+## Package
+
+fakesteak might also be available as a package:
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/fakesteak.svg)](https://repology.org/project/fakesteak/versions)
+
 ## Building / Running
 
 You can just run `make`. After that, you should be able to run it from the `bin` directory:
